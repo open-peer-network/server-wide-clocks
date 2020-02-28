@@ -31,16 +31,33 @@ export const nonStrippedKeys: string[] = [];
 export const storage: Storage = {};
 
 const { stepNodeCounter, readNodeCounter } = (() => {
-    let NWC = 0;
+    let counter = 0;
     return {
-        stepNodeCounter: () => ++NWC,
-        readNodeCounter: () => NWC,
+        stepNodeCounter: (n?: number) => n ? ++counter : counter += n,
+        readNodeCounter: () => counter,
     };
 })();
+export { stepNodeCounter, readNodeCounter };
+
+const sortDots = (dots: Dot[]) => (
+    dots.sort((l, r) => Number(l[1] > r[1]))
+);
+const dotsMatch = ([id1, c1]: Dot, [id2, c2]: Dot) => (
+    id1 === id2 && c1 === c2
+);
+
+export const normalize = (base: number, dots: Dot[]) => {
+    let newBase = base;
+    const kept = dots.slice();
+    sortDots(dots).forEach((dot) => {
+        if (dot[1] <= newBase + 1) {
+            kept.splice(kept.findIndex((dot2) => dotsMatch(dot, dot2)), 1);
+        }
+    });
+    return [newBase + kept.length, kept];
+};
 
 export const getDot = (): Dot => ([
     NODE_ID,
     stepNodeCounter(),
 ]);
-
-export { readNodeCounter };
