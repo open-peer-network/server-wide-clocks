@@ -1,0 +1,109 @@
+import * as swc from '../swc-node';
+import { NodeClock, NodeClocks } from '../swc-node';
+
+const sortNodeClocks = (nc: NodeClocks) => (
+	nc.sort(([id1], [id2]) => Number(id1 > id2))
+);
+
+describe('server-wide clocks', () => {
+	it('norm', () => {
+		expect(swc.norm([5, 3])).toEqual([7, 0]);
+		expect(swc.norm([5, 2])).toEqual([5, 2]);
+		expect(swc.normBvv([["a", [0, 0]]])).toEqual([]);
+		expect(swc.normBvv([["a", [5, 3]]])).toEqual([["a", [7, 0]]]);
+	});
+
+	it('seq', () => {
+		expect(swc.seq(1, 5)).toEqual([1,2,3,4,5]);
+	});
+
+	it('values', () => {
+		expect(swc.values([0, 0])).toEqual([]);
+		expect(swc.values([5, 3])).toEqual([1,2,3,4,5,6,7]);
+		expect(swc.values([2, 5])).toEqual([1,2,3,5]);
+	});
+
+	it('missing dots', () => {
+		const B1: NodeClock[] = [["a",[12,0]], ["b",[7,0]], ["c",[4,0]], ["d",[5,0]], ["e",[5,0]], ["f",[7,10]], ["g",[5,10]], ["h",[5,14]]];
+		const B2: NodeClock[] = [["a",[5,14]], ["b",[5,14]], ["c",[5,14]], ["d",[5,14]], ["e",[15,0]], ["f",[5,14]], ["g",[7,10]], ["h",[7,10]]];
+		expect(swc.missingDots(B1,B2,[])).toEqual([]);
+		expect(sortNodeClocks(swc.missingDots(B1,B2,["a","b","c","d","e","f","g","h"]))).toEqual([["a",[6,10,11,12]], ["b",[6]], ["f",[6,11]], ["h",[8]]]);
+		expect(sortNodeClocks(swc.missingDots(B1,B2,["a","c","d","e","f","g","h"]))).toEqual([["a", [6,10,11,12]], ["f",[6,11]], ["h",[8]]]);
+		expect(sortNodeClocks(swc.missingDots([["a", [2, 2]], ["b", [3, 0]]], [], ["a"]))).toEqual([["a", [1, 2, 4]]]);
+		expect(sortNodeClocks(swc.missingDots([["a", [2, 2]], ["b", [3, 0]]], [], ["a","b"]))).toEqual([["a", [1, 2, 4]], ["b", [1, 2, 3]]]);
+		expect(sortNodeClocks(swc.missingDots([], B1, ["a","b","c","d","e","f","g","h"]))).toEqual([]);
+	});
+
+	it('subtract dots', () => {
+		expect(swc.subtractDots([12,0],[5,14])).toEqual([6,10,11,12]);
+		expect(swc.subtractDots([7,0],[5,14])).toEqual([6]);
+		expect(swc.subtractDots([4,0],[5,14])).toEqual([]);
+		expect(swc.subtractDots([5,0],[5,14])).toEqual([]);
+		expect(swc.subtractDots([5,0],[15,0])).toEqual([]);
+		expect(swc.subtractDots([7,10],[5,14])).toEqual([6,11]);
+		expect(swc.subtractDots([5,10],[7,10])).toEqual([]);
+		expect(swc.subtractDots([5,14],[7,10])).toEqual([8]);
+	});
+
+	it('add', () => {
+		expect(sortNodeClocks(swc.add([["a", [5, 3]]], ["b", 0]))).toEqual([["a", [5, 3]], ["b", [0, 0]]]);
+		expect(sortNodeClocks(swc.add([["a", [5, 3]]], ["a", 1]))).toEqual([["a", [7, 0]]]);
+		expect(sortNodeClocks(swc.add([["a", [5, 3]]], ["a", 8]))).toEqual([["a", [8, 0]]]);
+		expect(sortNodeClocks(swc.add([["a", [5, 3]]], ["b", 8]))).toEqual([["a", [5, 3]], ["b", [0, 128]]]);
+	});
+});
+
+/*
+add_aux_test() ->
+	?assertEqual( add_aux({5,3}, 8), {8,0} ),
+	?assertEqual( add_aux({5,3}, 7), {7,0} ),
+	?assertEqual( add_aux({5,3}, 4), {7,0} ),
+	?assertEqual( add_aux({2,5}, 4), {5,0} ),
+	?assertEqual( add_aux({2,5}, 6), {3,6} ),
+	?assertEqual( add_aux({2,4}, 6), {2,12} ).
+
+merge_test() ->
+	?assertEqual( merge( [{"a",{5,3}}] , [{"a",{2,4}}] ), [{"a",{7,0}}] ),
+	?assertEqual( merge( [{"a",{5,3}}] , [{"b",{2,4}}] ), [{"a",{7,0}}, {"b",{2,4}}] ),
+	?assertEqual( merge( [{"a",{5,3}}, {"c",{1,2}}] , [{"b",{2,4}}, {"d",{5,3}}] ),
+				  [{"a",{7,0}}, {"b",{2,4}}, {"c",{1,2}}, {"d",{7,0}}] ),
+	?assertEqual( merge( [{"a",{5,3}}, {"c",{1,2}}] , [{"b",{2,4}}, {"c",{5,3}}] ), 
+				  [{"a",{7,0}}, {"b",{2,4}}, {"c",{7,0}}]).
+
+join_test() ->
+	?assertEqual( join( [{"a",{5,3}}] , [{"a",{2,4}}] ), [{"a",{7,0}}] ),
+	?assertEqual( join( [{"a",{5,3}}] , [{"b",{2,4}}] ), [{"a",{7,0}}] ),
+	?assertEqual( join( [{"a",{5,3}}, {"c",{1,2}}] , [{"b",{2,4}}, {"d",{5,3}}] ), [{"a",{7,0}}, {"c",{1,2}}] ),
+	?assertEqual( join( [{"a",{5,3}}, {"c",{1,2}}] , [{"b",{2,4}}, {"c",{5,3}}] ), [{"a",{7,0}}, {"c",{7,0}}] ).
+
+join_aux_test() ->
+	?assertEqual( join_aux({5,3}, {2,4}), join_aux({2,4}, {5,3}) ),
+	?assertEqual( join_aux({5,3}, {2,4}), {5,3} ),
+	?assertEqual( join_aux({2,2}, {3,0}), {3,1} ),
+	?assertEqual( join_aux({2,2}, {3,1}), {3,1} ),
+	?assertEqual( join_aux({2,2}, {3,2}), {3,3} ),
+	?assertEqual( join_aux({2,2}, {3,4}), {3,5} ),
+	?assertEqual( join_aux({3,2}, {1,4}), {3,3} ),
+	?assertEqual( join_aux({3,2}, {1,16}), {3,6} ).
+
+base_test() ->
+	?assertEqual( base( [{"a",{5,3}}] ), [{"a",{7,0}}] ),
+	?assertEqual( base( [{"a",{5,2}}] ), [{"a",{5,0}}] ),
+	?assertEqual( base( [{"a",{5,3}}, {"b",{2,4}}, {"c",{1,2}}, {"d",{5,2}}] ), 
+						[{"a",{7,0}}, {"b",{2,0}}, {"c",{1,0}}, {"d",{5,0}}] ).
+
+
+event_test() ->
+	?assertEqual( event( [{"a",{7,0}}] , "a"), {8, [{"a",{8,0}}]} ),
+	?assertEqual( event( [{"a",{5,3}}] , "b"), {1, [{"a",{5,3}}, {"b",{1,0}}]} ),
+	?assertEqual( event( [{"a",{5,3}}, {"b",{2,0}}, {"c",{1,2}}, {"d",{5,3}}] , "b"), 
+						{3, [{"a",{5,3}}, {"b",{3,0}}, {"c",{1,2}}, {"d",{5,3}}]} ).
+
+
+store_entry_test() ->
+	?assertEqual( store_entry( "a", {0,0}, [{"a",{7,0}}]), [{"a",{7,0}}] ),
+	?assertEqual( store_entry( "b", {0,0}, [{"a",{7,0}}]), [{"a",{7,0}}] ),
+	?assertEqual( store_entry( "a", {9,0}, [{"a",{7,0}}]), [{"a",{9,0}}] ),
+	?assertEqual( store_entry( "a", {90,0}, [{"a",{7,1234}}]), [{"a",{90,0}}] ),
+	?assertEqual( store_entry( "b", {9,0}, [{"a",{7,0}}]), [{"a",{7,0}}, {"b",{9,0}}] ).
+*/
