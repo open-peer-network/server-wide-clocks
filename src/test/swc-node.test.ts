@@ -49,7 +49,7 @@ describe('SWC Node', () => {
 		expect(swc.add([["a", [5, 3]]], ["b", 8])).toEqual([["a", [5, 3]], ["b", [0, 128]]]);
 	});
 
-	it('addAux', () => {
+	it('add aux', () => {
 		expect(swc.addAux([5, 3], 8)).toEqual([8, 0]);
 		expect(swc.addAux([5, 3], 7)).toEqual([7, 0]);
 		expect(swc.addAux([5, 3], 4)).toEqual([7, 0]);

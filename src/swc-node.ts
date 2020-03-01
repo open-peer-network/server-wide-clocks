@@ -1,16 +1,21 @@
 import { Dot, BaseBitmapPair, BVV } from './swc-types';
 
+const { isArray } = Array;
+
 // Returns the entry of a BVV associated with a given ID.
 export const get = (
-	[nodeId, bitmap]: BaseBitmapPair,
+	bbp: string,
 	bvv: BVV[],
-) => (
-	bvv.find(([id]) => id === `${nodeId},${bitmap}`) || [0, 0]
-);
+): BaseBitmapPair => {
+	const match = bvv.find(([id]) => id === bbp);
+	return match ? match[1] : [0, 0];
+};
 
 // Normalizes an entry pair, by removing dots and adding them to the base
 // if they are contiguous with the base.
-export const norm = ([baseCounter, bitmap]: BaseBitmapPair): BaseBitmapPair => (
+export const norm = (
+	[baseCounter, bitmap]: BaseBitmapPair
+): BaseBitmapPair => (
 	bitmap % 2 ? norm([baseCounter + 1, bitmap >> 1]) : [baseCounter, bitmap]
 );
 

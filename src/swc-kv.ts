@@ -1,10 +1,10 @@
-import { DCC, DotValuePair, BVV } from './swc-types';
+import { Dot, DCC, DotValuePair, BVV } from './swc-types';
 import * as swcVv from './swc-vv';
 import * as swcNode from './swc-node';
 
 // Returns the set of values held in the DCC.
 export const values = ([values]: DCC): string[] => (
-    values.map(([, v]) => v)
+	values.map(([, v]) => v)
 );
 
 // Returns the causal context of a DCC, which is representable as a 
@@ -18,97 +18,111 @@ export const context = ([, dots]: DCC) => dots;
 // context; the causal context is obtained by a standard version vector merge
 // function (performing the pointwise maximum).
 export const sync = (
-    [dvp1, dots1]: DCC,
-    [dvp2, dots2]: DCC,
+	[dvp1, dots1]: DCC,
+	[dvp2, dots2]: DCC,
 ) => {
-    // if two versions have the same dot, they must have the same value also.
-    // merge the two DCC's.
-    const merged: DotValuePair[] = Object.values([...dvp1, ...dvp2].reduce((acc, [dot, val]) => {
-        acc[dot.join()] = [dot, val];
-        return acc;
-    }, {}));
+	// if two versions have the same dot, they must have the same value also.
+	// merge the two DCC's.
+	const merged: DotValuePair[] = Object.values([...dvp1, ...dvp2].reduce((acc, [dot, val]) => {
+		acc[dot.join()] = [dot, val];
+		return acc;
+	}, {}));
 
-    // filter the outdated versions
-    const current = merged.filter(([[id, counter]]) => (
-        counter > Math.min(swcVv.get(id, dots1), swcVv.get(id, dots2))
-    ));
-    // calculate versions that are in both DCC's
-    const dvp1Dots = dvp1.map(([dot]) => dot);
+	// filter the outdated versions
+	const current = merged.filter(([[id, counter]]) => (
+		counter > Math.min(swcVv.get(id, dots1), swcVv.get(id, dots2))
+	));
+	// calculate versions that are in both DCC's
+	const dvp1Dots = dvp1.map(([dot]) => dot);
 
-    const filtered = dvp2.filter(([dot1]) => dvp1Dots.some((dot2) => (
-        dot1.join() === dot2.join()
-    )));
-    // add these versions to the filtered list of versions
-    const D = [...current, ...filtered];
-    // return the new list of version and the merged VVs
-    return [D, swcVv.join(dots1, dots2)];
+	const filtered = dvp2.filter(([dot1]) => dvp1Dots.some((dot2) => (
+		dot1.join() === dot2.join()
+	)));
+	// add these versions to the filtered list of versions
+	const D = [...current, ...filtered];
+	// return the new list of version and the merged VVs
+	return [D, swcVv.join(dots1, dots2)];
 };
 
 // Adds the dots corresponding to each version in the DCC to the BVV; this
 // is accomplished by using the standard fold higher-order function, passing
 // the function swc_node:add/2 defined over BVV and dots, the BVV, and the list of
 // dots in the DCC.
-export const add = (bvv: BVV[], [versions]: DCC): BVV[] => {
-    const dots = versions.map(([k]) => k);
-    return dots.reduce((acc, item) => swcNode.add(acc, item), bvv);
+export const addBVV = (bvv: BVV[], [versions]: DCC): BVV[] => {
+	const dots = versions.map(([k]) => k);
+	return dots.reduce((acc, item) => swcNode.add(acc, item), bvv);
 };
 
-/*
 // This function is to be used at node I after dcc:discard/2, and adds a
 // mapping, from the Dot (I, N) (which should be obtained by previously applying
 // swc_node:event/2 to the BVV at node I) to the Value, to the DCC, and also advances
 // the i component of the VV in the DCC to N.
--spec add(dcc(), {id(),counter()}, value()) -> dcc().
-add({D,V}, Dot, Value) ->
-    {orddict:store(Dot, Value, D), swc_vv:add(V,Dot)}.
+export const addDCC = ([dvp, dccDot]: DCC, dot: Dot, value: string): DCC => {
+	const dvp2 = dvp.slice();
+	const dotStr = dot.join();
+	const idx = dvp.findIndex(([dot0]) => dot0.join() === dotStr);
+	dvp2[(idx > -1 ? idx : dvp.length)] = [dot, value];
+	return [
+		dvp2.sort(([[id1]], [[id2]]) => Number(id1 > id2)),
+		swcVv.add(dccDot, dot),
+	];
+};
 
 // It discards versions in DCC {D,V} which are made obsolete by a causal
 // context (a version vector) C, and also merges C into DCC causal context V.
--spec discard(dcc(), vv()) -> dcc().
-discard({D,V}, C) ->
-    FunFilter = fun ({Id,Counter}, _Val) -> Counter > swc_vv:get(Id,C) end,
-    {orddict:filter(FunFilter, D), swc_vv:join(V,C)}.
-
+export const discard = (
+	[dvps, ccDots]: DCC,
+	dot: Dot[],
+) => ([
+	dvps.filter(([[id, count]]) => count > swcVv.get(id, dot)),
+	swcVv.join(ccDots, dot),
+]);
 
 // It discards all entries from the version vector V in the DCC that are
 // covered by the corresponding base component of the BVV B; only entries with
 // greater sequence numbers are kept. The idea is that DCCs are stored after
 // being stripped of their causality information that is already present in the
 // node clock BVV.
--spec strip(dcc(), bvv()) -> dcc().
-strip({D,V}, B) ->
-    FunFilter = 
-        fun (Id,Counter) -> 
-            {Base,_Dots} = swc_node:get(Id,B),
-            Counter > Base
-        end,
-    {D, swc_vv:filter(FunFilter, V)}.
+export const strip = (
+	[dvp, dots]: DCC,
+	bvv: BVV[],
+): DCC => ([
+	dvp,
+	dots.filter(([id, count]) => (
+		Number(count > swcNode.get(id, bvv)[0])
+	)),
+]);
 
-
-// Function fill adds back causality information to a stripped DCC, before
+// Function fill/2 adds back causality information to a stripped DCC, before
 // any operation is performed.
--spec fill(dcc(), bvv()) -> dcc().
-fill({D,VV}, BVV) ->
-    FunFold = 
-        fun(Id, Acc) -> 
-            {Base,_D} = swc_node:get(Id,BVV),
-            swc_vv:add(Acc,{Id,Base})
-        end,
-    {D, lists:foldl(FunFold, VV, swc_node:ids(BVV))}.
-
+export const fill2 = (
+	[dvp, dots]: DCC,
+	bvv: BVV[],
+): DCC => ([
+	dvp,
+	bvv.reduce((acc, [id]) => {
+		const [base] = swcNode.get(id, bvv);
+		return swcVv.add(acc, [id, base]);
+	}, dots),
+]);
 
 // Same as fill/2 but only adds entries that are elements of a list of Ids,
 // instead of adding all entries in the BVV.
--spec fill(dcc(), bvv(), [id()]) -> dcc().
-fill({D,VV}, BVV, Ids) ->
-    % only consider ids that belong to both the list of ids received and the BVV
-    Ids2 = sets:to_list(sets:intersection(
-            sets:from_list(swc_node:ids(BVV)), 
-            sets:from_list(Ids))),
-    FunFold = 
-        fun(Id, Acc) -> 
-            {Base,_D} = swc_node:get(Id,BVV),
-            swc_vv:add(Acc,{Id,Base})
-        end,
-    {D, lists:foldl(FunFold, VV, Ids2)}.
-*/
+export const fill3 = (
+	[dvp, dots]: DCC,
+	bvv: BVV[],
+	ids: string[],
+): DCC => {
+	// only consider ids that belong to both the list of ids received and the BVV
+	const cross = bvv
+	.map(([id]) => id)
+	.filter((id) => ids.includes(id))
+	.concat(ids.filter((id0) => bvv.some(([id1]) => id1 === id0)));
+	return [
+		dvp,
+		cross.reduce((acc, id) => {
+			const [base] = swcNode.get(id, bvv);
+			return swcVv.add(acc, [id, base]);
+		}, dots),
+	];
+};

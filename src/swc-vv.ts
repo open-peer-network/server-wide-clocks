@@ -13,7 +13,7 @@ export const isKey = (vv: Dot[], id: string) => (
 // in the VV, it returns 0.
 export const get = (id: string, vv: Dot[]): number => {
 	const dot = vv.find(([id0]) => id0 === id);
-	return dot[1] || 0;
+	return dot ? dot[1] : 0;
 };
 
 // Merges or joins two VVs, taking the maximum counter if an entry is
