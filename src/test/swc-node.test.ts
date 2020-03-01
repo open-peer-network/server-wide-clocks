@@ -1,11 +1,11 @@
 import * as swc from '../swc-node';
-import { BVV } from '../swc-node';
+import { BVV } from '../swc-types';
 
 const sortNodeClocks = (nc: BVV[]) => (
 	nc.sort(([id1], [id2]) => Number(id1 > id2))
 );
 
-describe('server-wide clocks', () => {
+describe('SWC Node', () => {
 	it('norm', () => {
 		expect(swc.norm([5, 3])).toEqual([7, 0]);
 		expect(swc.norm([5, 2])).toEqual([5, 2]);

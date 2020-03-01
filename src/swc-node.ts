@@ -1,6 +1,4 @@
-export type Dot = [string, number];
-export type BaseBitmapPair = [number, number];
-export type BVV = [string, BaseBitmapPair];
+import { Dot, BaseBitmapPair, BVV } from './swc-types';
 
 // Returns the entry of a BVV associated with a given ID.
 export const get = (
@@ -51,7 +49,7 @@ export const missingDots = (
 export const subtractDots = (
 	[count1, bitmap1]: BaseBitmapPair,
 	[count2, bitmap2]: BaseBitmapPair,
-) => {
+): number[] => {
 	const [dots1, dots2] = count1 > count2 ? [
 		seq(count2 + 1, count1).concat(valuesAux(count1, bitmap1, [])),
 		valuesAux(count2, bitmap2, []),
@@ -85,18 +83,16 @@ const valuesAux = (
 ): number[] => {
 	if (bitmap === 0) return context.slice().reverse();
 	const newCount = baseCounter + 1;
-	if (bitmap % 2) {
-		return valuesAux(newCount, bitmap >> 1, [newCount, ...context]);
-	} else {
-		return valuesAux(newCount, bitmap >> 1, context);
-	}
+	return bitmap % 2
+		? valuesAux(newCount, bitmap >> 1, [newCount, ...context])
+		: valuesAux(newCount, bitmap >> 1, context);
 };
 
 // Adds a dot (ID, Counter) to a BVV.
 export const add = (
 	clocks: BVV[],
 	[id, counter]: Dot,
-) => {
+): BVV[] => {
 	const initial = addAux([0, 0], counter);
 	const fn = (entry: BaseBitmapPair) => addAux(entry, counter);
 
@@ -114,14 +110,14 @@ export const add = (
 export const addAux = (
 	[base, bitmap]: BaseBitmapPair,
 	count: number,
-) => (
+): BaseBitmapPair => (
 	(base < count)
 		? norm([base, bitmap | (1 << (count - base - 1))])
 		: norm([base, bitmap])
 );
 
 // Merges all entries from the two BVVs.
-export const merge = (bvvList1: BVV[], bvvList2: BVV[]) => (
+export const merge = (bvvList1: BVV[], bvvList2: BVV[]): BVV[] => (
 	normBvv(Object.entries(([...bvvList1, ...bvvList2]).reduce((acc, [id, bvv]) => {
 		acc[id] = acc[id] ? joinAux(acc[id], bvv) : bvv;
 		return acc;
@@ -129,7 +125,7 @@ export const merge = (bvvList1: BVV[], bvvList2: BVV[]) => (
 );
 
 // Joins entries from BVV2 that are also IDs in BVV1, into BVV1.
-export const join = (bvvList1: BVV[], bvvList2: BVV[]) => {
+export const join = (bvvList1: BVV[], bvvList2: BVV[]): BVV[] => {
 	// filter keys from bvvList2 that are not in bvvList1
 	const bvvList1Keys = bvvList1.map(([id]) => id);
 	const bvvList2b = bvvList2.filter(([id]) => bvvList1Keys.includes(id));
@@ -149,7 +145,7 @@ export const joinAux = (
 );
 
 // Takes and returns a BVV where in each entry, the bitmap is reset to zero.
-export const base = (bvv: BVV[]) => (
+export const base = (bvv: BVV[]): BVV[] => (
 	// normalize all entries
 	// remove all non-contiguous counters w.r.t the base
 	normBvv(bvv).map(([baseCounter, [counter]]) => ([baseCounter, [counter, 0]]))
@@ -160,7 +156,7 @@ export const base = (bvv: BVV[]) => (
 // function makes use of the invariant that the node BVV for node Id knows all
 // events generated at Id, i.e., the first component of the pair denotes the
 // last event, and the second component, the bitmap, is always zero.
-export const event = (bvv: BVV[], id: string) => {
+export const event = (bvv: BVV[], id: string): [number, BVV[]] => {
 	// find the next counter for id
 	const match = bvv.find(([id0]) => id0 === id);
 	// since nodes call event with their id, their entry always matches [N, 0]
@@ -175,17 +171,14 @@ export const storeEntry = (
 	id: string,
 	[base]: BaseBitmapPair,
 	bvv: BVV[],
-) => {
+): BVV[] => {
 	if (base === 0) return bvv;
 	const match = bvv.find(([id0]) => id0 === id);
 	if (match) {
 		const [,[base2]] = match;
-		if (base2 >= base) {
-			return bvv;
-		}
-		if (base2 < base) {
-			return bvv.map((entry) => entry[0] === id ? [id, [base, 0]] : entry);
-		}
+		return base2 < base
+			? bvv.map((entry) => entry[0] === id ? [id, [base, 0]] : entry)
+			: bvv;
 	}
 	return bvv.concat([[id, [base, 0]]]);
 };
