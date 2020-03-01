@@ -1,9 +1,6 @@
 import * as swc from '../swc-node';
 import { BVV } from '../swc-types';
 
-const sortNodeClocks = (nc: BVV[]) => (
-	nc.sort(([id1], [id2]) => Number(id1 > id2))
-);
 
 describe('SWC Node', () => {
 	it('norm', () => {
@@ -27,11 +24,11 @@ describe('SWC Node', () => {
 		const b1: BVV[] = [["a", [12, 0]], ["b", [7, 0]], ["c", [4, 0]], ["d", [5, 0]], ["e", [5, 0]], ["f", [7, 10]], ["g", [5, 10]], ["h", [5, 14]]];
 		const b2: BVV[] = [["a", [5, 14]], ["b", [5, 14]], ["c", [5, 14]], ["d", [5, 14]], ["e", [15, 0]], ["f", [5, 14]], ["g", [7, 10]], ["h", [7, 10]]];
 		expect(swc.missingDots(b1,b2,[])).toEqual([]);
-		expect(sortNodeClocks(swc.missingDots(b1,b2,["a","b","c","d","e","f","g","h"]))).toEqual([["a", [6, 10, 11, 12]], ["b", [6]], ["f", [6, 11]], ["h", [8]]]);
-		expect(sortNodeClocks(swc.missingDots(b1,b2,["a","c","d","e","f","g","h"]))).toEqual([["a", [6, 10, 11, 12]], ["f", [6, 11]], ["h", [8]]]);
-		expect(sortNodeClocks(swc.missingDots([["a", [2, 2]], ["b", [3, 0]]], [], ["a"]))).toEqual([["a", [1, 2, 4]]]);
-		expect(sortNodeClocks(swc.missingDots([["a", [2, 2]], ["b", [3, 0]]], [], ["a","b"]))).toEqual([["a", [1, 2, 4]], ["b", [1, 2, 3]]]);
-		expect(sortNodeClocks(swc.missingDots([], b1, ["a","b","c","d","e","f","g","h"]))).toEqual([]);
+		expect(swc.missingDots(b1,b2,["a","b","c","d","e","f","g","h"])).toEqual([["a", [6, 10, 11, 12]], ["b", [6]], ["f", [6, 11]], ["h", [8]]]);
+		expect(swc.missingDots(b1,b2,["a","c","d","e","f","g","h"])).toEqual([["a", [6, 10, 11, 12]], ["f", [6, 11]], ["h", [8]]]);
+		expect(swc.missingDots([["a", [2, 2]], ["b", [3, 0]]], [], ["a"])).toEqual([["a", [1, 2, 4]]]);
+		expect(swc.missingDots([["a", [2, 2]], ["b", [3, 0]]], [], ["a","b"])).toEqual([["a", [1, 2, 4]], ["b", [1, 2, 3]]]);
+		expect(swc.missingDots([], b1, ["a","b","c","d","e","f","g","h"])).toEqual([]);
 	});
 
 	it('subtract dots', () => {
@@ -46,10 +43,10 @@ describe('SWC Node', () => {
 	});
 
 	it('add', () => {
-		expect(sortNodeClocks(swc.add([["a", [5, 3]]], ["b", 0]))).toEqual([["a", [5, 3]], ["b", [0, 0]]]);
-		expect(sortNodeClocks(swc.add([["a", [5, 3]]], ["a", 1]))).toEqual([["a", [7, 0]]]);
-		expect(sortNodeClocks(swc.add([["a", [5, 3]]], ["a", 8]))).toEqual([["a", [8, 0]]]);
-		expect(sortNodeClocks(swc.add([["a", [5, 3]]], ["b", 8]))).toEqual([["a", [5, 3]], ["b", [0, 128]]]);
+		expect(swc.add([["a", [5, 3]]], ["b", 0])).toEqual([["a", [5, 3]], ["b", [0, 0]]]);
+		expect(swc.add([["a", [5, 3]]], ["a", 1])).toEqual([["a", [7, 0]]]);
+		expect(swc.add([["a", [5, 3]]], ["a", 8])).toEqual([["a", [8, 0]]]);
+		expect(swc.add([["a", [5, 3]]], ["b", 8])).toEqual([["a", [5, 3]], ["b", [0, 128]]]);
 	});
 
 	it('addAux', () => {
@@ -62,10 +59,10 @@ describe('SWC Node', () => {
 	});
 
 	it('merge', () => {
-		expect(sortNodeClocks(swc.merge([["a", [5, 3]]], [["a", [2, 4]]]))).toEqual([["a", [7, 0]]]);
-		expect(sortNodeClocks(swc.merge([["a", [5, 3]]], [["b", [2, 4]]]))).toEqual([["a", [7, 0]], ["b", [2, 4]]]);
-		expect(sortNodeClocks(swc.merge([["a", [5, 3]], ["c", [1, 2]]], [["b", [2, 4]], ["d", [5, 3]]]))).toEqual([["a", [7, 0]], ["b", [2, 4]], ["c", [1, 2]], ["d", [7, 0]]]);
-		expect(sortNodeClocks(swc.merge([["a", [5, 3]], ["c", [1, 2]]], [["b", [2, 4]], ["c", [5, 3]]]))).toEqual([["a", [7, 0]], ["b", [2, 4]], ["c", [7, 0]]]);
+		expect(swc.merge([["a", [5, 3]]], [["a", [2, 4]]])).toEqual([["a", [7, 0]]]);
+		expect(swc.merge([["a", [5, 3]]], [["b", [2, 4]]])).toEqual([["a", [7, 0]], ["b", [2, 4]]]);
+		expect(swc.merge([["a", [5, 3]], ["c", [1, 2]]], [["b", [2, 4]], ["d", [5, 3]]])).toEqual([["a", [7, 0]], ["b", [2, 4]], ["c", [1, 2]], ["d", [7, 0]]]);
+		expect(swc.merge([["a", [5, 3]], ["c", [1, 2]]], [["b", [2, 4]], ["c", [5, 3]]])).toEqual([["a", [7, 0]], ["b", [2, 4]], ["c", [7, 0]]]);
 	});
 
 	it('join', () => {

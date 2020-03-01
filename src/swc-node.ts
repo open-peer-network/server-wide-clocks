@@ -21,6 +21,8 @@ export const normBvv = (bvv: BVV[]): BVV[] => (
 	.map(([key, bvv]): BVV => ([key, norm(bvv)]))
 	// remove `[0,0]` entries
 	.filter(([, bvv]) => bvv.join(',') !== '0,0')
+	// sort by node ID's
+	.sort(([id1], [id2]) => Number(id1 > id2))
 );
 
 // Returns the dots in the first clock that are missing from the second
@@ -29,8 +31,8 @@ export const missingDots = (
 	nc1: BVV[],
 	nc2: BVV[],
 	ids: string[],
-): BVV[] => {
-	return nc1.length < 1 ? [] : nc1.reduce((acc, [id, bvv]) => {
+): BVV[] => (
+	nc1.length < 1 ? [] : nc1.reduce((acc, [id, bvv]) => {
 		if (ids.includes(id)) {
 			const idx = nc2.findIndex(([id0]) => id === id0);
 			if (idx > -1) {
@@ -43,8 +45,8 @@ export const missingDots = (
 		} else {
 			return acc;
 		}
-	}, []);
-};
+	}, []).sort(([id1], [id2]) => Number(id1 > id2))
+);
 
 export const subtractDots = (
 	[count1, bitmap1]: BaseBitmapPair,
@@ -103,7 +105,7 @@ export const add = (
 	} else {
 		newClocks.unshift([id, initial]);
 	}
-	return newClocks;
+	return newClocks.sort(([id1], [id2]) => Number(id1 > id2));
 };
 
 // Adds a dot to a BVV entry, returning the normalized entry.
@@ -162,7 +164,7 @@ export const event = (bvv: BVV[], id: string): [number, BVV[]] => {
 	// since nodes call event with their id, their entry always matches [N, 0]
 	const count = match ? match[1][0] + 1 : 1;
 	// return the new counter and the updated BVV
-	return [count, add(bvv, [id, count]).sort(([id1], [id2]) => Number(id1 > id2))];
+	return [count, add(bvv, [id, count])];
 };
 
 // Stores an Id-Entry pair in a BVV; if the id already exists, the 

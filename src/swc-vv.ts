@@ -11,9 +11,10 @@ export const isKey = (vv: Dot[], id: string) => (
 
 // Returns the counter associated with an id K. If the key is not present
 // in the VV, it returns 0.
-export const get = (id: string, vv: Dot[]) => (
-	vv.find(([id0]) => id0 === id) || 0
-);
+export const get = (id: string, vv: Dot[]): number => {
+	const dot = vv.find(([id0]) => id0 === id);
+	return dot[1] || 0;
+};
 
 // Merges or joins two VVs, taking the maximum counter if an entry is
 // present in both VVs.
@@ -33,7 +34,7 @@ export const leftJoin = (a: Dot[], b: Dot[]) => {
 
 // Adds an entry {Id, Counter} to the VV, performing the maximum between
 // both counters, if the entry already exists.
-export const add = (vv: Dot[], [id, counter]): Dot[] => {
+export const add = (vv: Dot[], [id, counter]: Dot): Dot[] => {
 	const idx = vv.findIndex(([id0]) => id0 === id);
 	if (idx > -1) {
 		const vv2 = vv.slice();
