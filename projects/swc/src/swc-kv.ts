@@ -1,4 +1,5 @@
 import { Dot, DCC, DotValuePair, BVV } from './swc-types';
+import { storeByDot } from './erlang-helpers';
 import * as swcVv from './swc-vv';
 import * as swcNode from './swc-node';
 
@@ -48,7 +49,10 @@ export const sync = (
 // is accomplished by using the standard fold higher-order function, passing
 // the function swc_node:add/2 defined over BVV and dots, the BVV, and the list of
 // dots in the DCC.
-export const addBVV = (bvv: BVV[], [versions]: DCC): BVV[] => {
+export const addBVV = (
+	bvv: BVV[],
+	[versions]: DCC,
+): BVV[] => {
 	const dots = versions.map(([k]) => k);
 	return dots.reduce((acc, item) => swcNode.add(acc, item), bvv);
 };
@@ -57,16 +61,14 @@ export const addBVV = (bvv: BVV[], [versions]: DCC): BVV[] => {
 // mapping, from the Dot (I, N) (which should be obtained by previously applying
 // swc_node:event/2 to the BVV at node I) to the Value, to the DCC, and also advances
 // the i component of the VV in the DCC to N.
-export const addDCC = ([dvp, dccDot]: DCC, dot: Dot, value: string): DCC => {
-	const dvp2 = dvp.slice();
-	const dotStr = dot.join();
-	const idx = dvp.findIndex(([dot0]) => dot0.join() === dotStr);
-	dvp2[(idx > -1 ? idx : dvp.length)] = [dot, value];
-	return [
-		dvp2.sort(([[id1]], [[id2]]) => Number(id1 > id2)),
-		swcVv.add(dccDot, dot),
-	];
-};
+export const addDCC = (
+	[dvp, dccDot]: DCC,
+	dot: Dot,
+	value: string,
+): DCC => ([
+	storeByDot(dot, value, dvp),
+	swcVv.add(dccDot, dot),
+]);
 
 // It discards versions in DCC {D,V} which are made obsolete by a causal
 // context (a version vector) C, and also merges C into DCC causal context V.
@@ -88,7 +90,7 @@ export const strip = (
 	bvv: BVV[],
 ): DCC => ([
 	dvp,
-	dots.filter(([id, count]) => (
+	dots.filter(([id, count]: Dot) => (
 		Number(count > swcNode.get(id, bvv)[0])
 	)),
 ]);
@@ -100,7 +102,7 @@ export const fill2 = (
 	bvv: BVV[],
 ): DCC => ([
 	dvp,
-	bvv.reduce((acc, [id]) => {
+	bvv.reduce((acc, [id]: BVV) => {
 		const [base] = swcNode.get(id, bvv);
 		return swcVv.add(acc, [id, base]);
 	}, dots),
