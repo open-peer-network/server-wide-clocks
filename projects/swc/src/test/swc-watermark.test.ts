@@ -1,66 +1,152 @@
 import * as swc from '../swc-watermark';
-import { BVV, VVM, VV } from '../swc-types';
+import { BVV, VVM, VV, Dot } from '../swc-types';
+
+const { isArray } = Array;
+
+// export type Dot = [string, number];
+// export type BaseBitmapPair = [number, number];
+// export type BVV = [string, BaseBitmapPair];
+// export type VV = [string, Dot[]];
+// export type VVM = [VV[], VV[]];
+// export type DotValuePair = [Dot, string];
+// export type DCC = [DotValuePair[], Dot[]];
+
+// class VersionVector extends Array {
+//     structType = "VV"
+//     constructor(source: [string, Dot[]]) {
+//         super();
+//         if (isArray(source)) {
+//             if (typeof source[0] === "string") {
+//                 this[0] = source[0];
+//             }
+//             if (isArray(source[1])) {
+//                 this[1] = source[1].filter((dot) => (
+//                     dot.structType && dot.structType === "Dot"
+//                 ));
+//             }
+//         }
+//     }
+// }
+
+const t = (
+    a: string,
+    b: number | Dot[]
+): Dot | VV => {
+    if (typeof a === "string") {
+        if (typeof b === "number") {
+            return [a, b] as Dot;
+        } else if (isArray(b)) {
+            return [a, b] as VV;
+        }
+    }
+};
+const l = (list: Dot[]): Dot[] => list;
 
 describe('SWC Watermark', () => {
     it('update', () => {
         const C1: BVV[] = [
-            ["a", [12,0]], ["b", [7,0]], ["c", [4,0]], ["d", [5,0]], ["e", [5,0]], ["f", [7,10]], ["g", [5,10]], ["h", [5,14]],
+            ["a", [12, 0]],
+            ["b", [7, 0]],
+            ["c", [4, 0]],
+            ["d", [5, 0]],
+            ["e", [5, 0]],
+            ["f", [7, 10]],
+            ["g", [5, 10]],
+            ["h", [5, 14]],
         ];
         const C2: BVV[] = [
-            ["a", [5,14]], ["b", [5,14]], ["c", [50,14]], ["d", [5,14]], ["e", [15,0]], ["f", [5,14]], ["g", [7,10]], ["h", [7,10]],
+            ["a", [5, 14]],
+            ["b", [5, 14]],
+            ["c", [50, 14]],
+            ["d", [5, 14]],
+            ["e", [15, 0]],
+            ["f", [5, 14]],
+            ["g", [7, 10]],
+            ["h", [7, 10]],
         ];
-        const M = [[], []] as VVM;
+        const M = [ [], [] ] as VVM;
         const M1 = swc.updateCell(M, "a", "b", 4);
-        expect(M1).toEqual([[["a", [["b", 4]]]], []]);
+
+        expect(M1).toEqual([
+            [t("a", [t("b", 4)] as Dot[])],
+            [],
+        ]);
         const M2 = swc.updateCell(M1, "a", "c", 10);
-        expect(M2).toEqual([[["a", [["b", 4], ["c", 10]]]], []]);
+        expect(M2).toEqual([
+            [t("a", [t("b", 4), t("c", 10)] as Dot[])],
+            [],
+        ]);
         const M3 = swc.updateCell(M2, "c", "c", 2);
-        expect(M3).toEqual([[["a", [["b",4], ["c",10]]], ["c", [["c",2]]]], []]);
+        expect(M3).toEqual([
+            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 2)] as Dot[])],
+            [],
+        ]);
         const M4 = swc.updateCell(M3, "c", "c", 20);
-        expect(M4).toEqual([[["a", [["b",4], ["c",10]]], ["c", [["c",20]]]], []]);
+        expect(M4).toEqual([
+            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
+            [],
+        ]);
         const M5 = swc.updateCell(M4, "c", "c", 15);
         expect(M4).toEqual(M5);
         const M6 = swc.updatePeer(M5, "c", C1);
-        expect(M6).toEqual([[["a", [["b",4], ["c",12]]], ["c", [["c",20]]]], []]);
+        expect(M6).toEqual([
+            [t("a", [t("b", 4), t("c", 12)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
+            [],
+        ]);
         const M7 = swc.updatePeer(M5, "c", C2);
-        expect(M7).toEqual([[["a", [["b",4], ["c",10]]], ["c", [["c",50]]]], []]);
+        expect(M7).toEqual([
+            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 50)] as Dot[])],
+            [],
+        ]);
         const M8 = swc.updatePeer(M5, "a", C1);
-        expect(M8).toEqual([[["a", [["b",4], ["c",10]]], ["c", [["c",20]]]], []]);
+        expect(M8).toEqual([
+            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
+            [],
+        ]);
         const M9 = swc.updatePeer(M5, "a", C2);
-        expect(M9).toEqual([[["a", [["b",4], ["c",10]]], ["c", [["c",20]]]], []]);
+        expect(M9).toEqual([
+            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
+            [],
+        ]);
         const M10 = swc.updatePeer(M5, "b", C1);
-        expect(M10).toEqual([[["a", [["b",12], ["c",10]]], ["c", [["c",20]]]], []]);
+        expect(M10).toEqual([
+            [t("a", [t("b", 12), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
+            [],
+        ]);
         const M11 = swc.updatePeer(M5, "b", C2);
-        expect(M11).toEqual([[["a", [["b",5], ["c",10]]], ["c", [["c",20]]]], []]);
+        expect(M11).toEqual([
+            [t("a", [t("b", 5), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
+            [],
+        ]);
 
         const N: VVM = [
             [
-                ["c", [["c",4],["d",3],["z",0]]] as VV,
-                ["d", [["c",0],["d",1],["e",2]]] as VV,
-                ["z", [["a",0],["c",0],["z",0]]] as VV,
+                t("c", [t("c", 4), t("d", 3), t("z", 0)] as Dot[]) as VV,
+                t("d", [t("c", 0), t("d", 1), t("e", 2)] as Dot[]) as VV,
+                t("z", [t("a", 0), t("c", 0), t("z", 0)] as Dot[]) as VV,
             ],
             [
-                ["b",[["a",2],["b",2],["c",3]]] as VV,
+                t("b", [t("a", 2), t("b", 2), t("c", 3)] as Dot[]) as VV,
             ],
         ];
         expect(swc.updatePeer(N, "a", C1)).toEqual([
             [
-                ["c", [["c",4],["d",3],["z",0]]] as VV,
-                ["d", [["c",0],["d",1],["e",2]]] as VV,
-                ["z", [["a",0],["c",0],["z",0]]] as VV,
+                t("c", [t("c", 4), t("d", 3), t("z", 0)] as Dot[]) as VV,
+                t("d", [t("c", 0), t("d", 1), t("e", 2)] as Dot[]) as VV,
+                t("z", [t("a", 0), t("c", 0), t("z", 0)] as Dot[]) as VV,
             ],
             [
-                ["b", [["a",7],["b",2],["c",3]]] as VV,
+                t("b", [t("a", 7), t("b", 2), t("c", 3)] as Dot[]) as VV,
             ],
         ] as VVM);
         expect(swc.updatePeer(N, "c", C2)).toEqual([
             [
-                ["c",[["c",50],["d",3],["z",0]]] as VV,
-                ["d",[["c",5],["d",1],["e",2]]] as VV,
-                ["z",[["a",0],["c",0],["z",0]]] as VV,
+                t("c", [t("c", 50), t("d", 3), t("z", 0)] as Dot[]) as VV,
+                t("d", [t("c", 5), t("d", 1), t("e", 2)] as Dot[]) as VV,
+                t("z", [t("a", 0), t("c", 0), t("z", 0)] as Dot[]) as VV,
             ],
             [
-                ["b",[["a",2],["b",2],["c",5]]] as VV,
+                t("b", [t("a", 2), t("b", 2), t("c", 5)] as Dot[]) as VV,
             ]
         ] as VVM);
     });
@@ -89,7 +175,7 @@ left_join_test() ->
     //     console.log(JSON.stringify(expected, null, '\t'));
     //     console.log(JSON.stringify(actual, null, '\t'));
     //     expect(expected).toEqual(actual);
-    //     expect(swc.addPeer(M, "z",["a","b"])).toEqual([[["z", [["a",0], ["b",0], ["z",0]]]], []]);
+    //     expect(swc.addPeer(M, "z",["a","b"])).toEqual([[t("z", [t("a", 0), t("b", 0), t("z", 0)] as Dot[])], []]);
     //     // expect(swc.addPeer(M4, "z",["t2","t1"]), {[{"a",[{"b",4}, {"c",10}]}, {"c",[{"c",20}]}, {"z",[{"t1",0},{"t2",0},{"z",0}]}], []}).
     // });
 /*

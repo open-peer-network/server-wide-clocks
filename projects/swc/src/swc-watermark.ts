@@ -10,8 +10,9 @@ export const addPeer = (
 	newPeerId: string,
 	itsPeers: string[],
 ): VVM => {
-	const newEntry = [newPeerId, ...itsPeers]
-	.reduce((acc, id) => swcVv.add(acc, [id, 0] as Dot), []);
+	const newEntry = [newPeerId, ...itsPeers].reduce((acc, id) => (
+		swcVv.add(acc, [id, 0] as Dot)
+	), []);
 	return [storeById(newPeerId, newEntry, bvvA), bvvB];
 };
 
@@ -39,35 +40,42 @@ const updatePeerAux = (
 	})
 );
 /*
--spec replace_peer(vv_matrix(), Old::id(), New::id()) -> vv_matrix().
-replace_peer({M,R}, Old, New) ->
-M3 = case orddict:is_key(Old, M) of
-	true ->
-		OldPeers0 = swcVv:ids(orddict:fetch(Old,M)),
-		OldPeers = lists:delete(Old, OldPeers0),
-		{M2,R} = add_peer({M,R}, New, OldPeers),
-		orddict:erase(Old, M2);
-	false -> M
-end,
-Fun = fun(_K,V) ->
-		case orddict:find(Old, V) of
-			error -> V;
-			{ok, _} ->
-				V2 = swcVv:delete_key(V, Old),
-				swcVv:add(V2, {New, 0})
-		end
-	end,
-{orddict:map(Fun, M3), orddict:map(Fun, R)}.
+// -spec replace_peer(vv_matrix(), Old::id(), New::id()) -> vv_matrix()
+const replacePeer = (
+	[M, R]: VVM,
+	oldId: string,
+	newId: string,
+): VVM => {
+	let M3;
+	if (M.some(([id]) => id === oldId)) {
+		const oldPeers0 = swcVv.ids(orddict.fetch(oldId, M));
+		const oldPeers = lists.delete(oldId, oldPeers0);
+		const [M2, R2] = addPeer([M, R], newId, oldPeers);
+		const M3 = orddict.erase(oldId, M2);
+	} else {
+		M3 = M;
+	}
+	const fn = (_K, V) => {
+		if (orddict.find(old, V)) {
+			const V2 = swcVv.deleteKey(V, old);
+			return swcVv.add(V2, [newId, 0]);
+		} else {
+			return V;
+		}
+	};
+	return [orddict.map(fn, M3), orddict.map(fn, R)];
+};
 
--spec retire_peer(vv_matrix(), Old::id(), New::id()) -> vv_matrix().
+/*
+// -spec retire_peer(vv_matrix(), Old::id(), New::id()) -> vv_matrix().
 retire_peer({M,R}, Old, New) ->
-case orddict:find(Old, M) of
+case orddict.find(Old, M) of
 	error ->
 		replace_peer({M,R}, Old, New);
 	{ok, OldEntry} ->
-		// CurrentCounter = swcVv:get(Old, OldEntry),
-		// OldEntry2 = swcVv:add(OldEntry, {Old, CurrentCounter+Jump}),
-		R1 = orddict:store(Old, OldEntry, R),
+		// CurrentCounter = swcVv.get(Old, OldEntry),
+		// OldEntry2 = swcVv.add(OldEntry, {Old, CurrentCounter+Jump}),
+		R1 = orddict.store(Old, OldEntry, R),
 		replace_peer({M,R1}, Old, New)
 end.
 
@@ -78,10 +86,10 @@ left_join({MA,RA},{MB,RB}) ->
 
 left_join_aux(A,B) ->
 	// filter entry peers from B that are not in A
-	PeersA = orddict:fetch_keys(A),
-	FunFilter = fun (Id,_) -> lists:member(Id, PeersA) end,
-	B2 = orddict:filter(FunFilter, B),
-	orddict:merge(fun (_,V1,V2) -> swcVv:left_join(V1,V2) end, A, B2).
+	PeersA = orddict.fetch_keys(A),
+	FunFilter = fun (Id,_) -> lists.member(Id, PeersA) end,
+	B2 = orddict.filter(FunFilter, B),
+	orddict.merge(fun (_,V1,V2) -> swcVv.left_join(V1,V2) end, A, B2).
 */
 // -spec update_cell(vv_matrix(), id(), id(), counter()) -> vv_matrix().
 export const updateCell = (
@@ -114,36 +122,36 @@ min({M,R}, Id) ->
 max(min_aux(M, Id), min_aux(R, Id)).
 
 min_aux(M, Id) ->
-case orddict:find(Id, M) of
+case orddict.find(Id, M) of
 	error -> 0;
-	{ok, VV} -> swcVv:min(VV)
+	{ok, VV} -> swcVv.min(VV)
 end.
 
 -spec peers(vv_matrix()) -> [id()].
 peers({M,_}) ->
-orddict:fetch_keys(M).
+orddict.fetch_keys(M).
 
 -spec get(vv_matrix(), id(), id()) -> counter().
 get({M,_}, P1, P2) ->
-case orddict:find(P1, M) of
+case orddict.find(P1, M) of
 	error -> 0;
-	{ok, VV} -> swcVv:get(P2, VV)
+	{ok, VV} -> swcVv.get(P2, VV)
 end.
 
 -spec reset_counters(vv_matrix()) -> vv_matrix().
 reset_counters({M,R}) ->
-{orddict:map(fun (_Id,VV) -> swcVv:reset_counters(VV) end, M),
-orddict:map(fun (_Id,VV) -> swcVv:reset_counters(VV) end, R)}.
+{orddict.map(fun (_Id,VV) -> swcVv.reset_counters(VV) end, M),
+orddict.map(fun (_Id,VV) -> swcVv.reset_counters(VV) end, R)}.
 
 -spec delete_peer(vv_matrix(), id()) -> vv_matrix().
 delete_peer({M,R}, Id) ->
-M2 = orddict:erase(Id, M),
-{orddict:map(fun (_Id,VV) -> swcVv:delete_key(VV, Id) end, M2), R}.
+M2 = orddict.erase(Id, M),
+{orddict.map(fun (_Id,VV) -> swcVv.delete_key(VV, Id) end, M2), R}.
 
 -spec prune_retired_peers(vv_matrix(), key_matrix(), [id()]) -> vv_matrix().
 prune_retired_peers({M,R}, DKM, DontRemotePeers) ->
-{M, orddict:filter(fun (Peer,_) ->
+{M, orddict.filter(fun (Peer,_) ->
 						   swc_dotkeymap:is_key(DKM, Peer) orelse
-						   lists:member(Peer, DontRemotePeers)
+						   lists.member(Peer, DontRemotePeers)
 				   end, R)}.
 */
