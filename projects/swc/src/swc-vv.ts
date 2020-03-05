@@ -1,11 +1,12 @@
-import { Dot } from './swc-types';
+import { d, Dot, OrderedList } from './swc-types';
+import { update } from './erlang-helpers';
 
 // Returns all the keys (ids) from a VV.
-export const vvIds = (vv: Dot[]) => (
-	vv.map(([id]) => id)
+export const vvIds = (vvd: Dot[]): string[] => (
+	vvd.map(([id]) => id)
 );
 
-export const isKey = (vv: Dot[], id: string) => (
+export const isKey = (vv: Dot[], id: string): boolean => (
 	vv.some(([id0]) => id0 === id)
 );
 
@@ -22,7 +23,7 @@ export const join = (a: Dot[], b: Dot[]): Dot[] => (
 	Object.entries([...a, ...b].reduce((acc, [id, num]) => {
 		acc[id] = Math.max(num, acc[id] || 0);
 		return acc;
-	}, {}))
+	}, {})).map(([id, num]: [string, number]) => d(id, num))
 );
 
 // Left joins two VVs, taking the maximum counter if an entry is
@@ -34,36 +35,49 @@ export const leftJoin = (a: Dot[], b: Dot[]) => {
 
 // Adds an entry {Id, Counter} to the VV, performing the maximum between
 // both counters, if the entry already exists.
-export const add = (vv: Dot[], [id, counter]: Dot): Dot[] => {
-	const idx = vv.findIndex(([id0]) => id0 === id);
+// export const add = (vv: Dot[], [id, counter]: Dot): Dot[] => {
+export const add = (
+	dots: OrderedList<Dot>,
+	[id, counter]: Dot,
+): Dot[] => {
+	// const fn = (oldVal: number): Dot => (
+	// 	d(id, Math.max(counter, oldVal))
+	// );
+	// return update(id, d(id, counter), fn, dots);
+
+	const idx = dots.findIndex(([id0]) => id0 === id);
 	if (idx > -1) {
-		const vv2 = vv.slice();
-		vv2[idx] = [id, Math.max(counter, vv2[idx][1])];
-		return vv2;
+		const dots2 = dots.slice();
+		dots2[idx] = d(id, Math.max(counter, dots2[idx][1]));
+		return dots2.map(([s, n]) => d(s, n));
 	} else {
-		return [...vv, [id, counter]];
+		return [...dots, d(id, counter)].map(([s, n]) => d(s, n));
 	}
 };
 
 // Returns the minimum counter of all entries.
-export const min = (vv: Dot[]): number => (
-	vv.reduce((acc, [,num]) => Math.min(acc, num), Infinity)
+export const min = (dots: Dot[]): number => (
+	dots.reduce((acc, [,num]) => Math.min(acc, num), Infinity)
 );
 
 // Returns the key with the minimum counter associated.
-export const minKey = (vv: Dot[]) => {
-	const [head, ...rest] = vv;
+export const minKey = (dots: Dot[]): string => {
+	const [head, ...rest] = dots;
 	const [minKey] = rest.reduce(([key2, val2], [key1, val1]) => (
-		val1 < val2 ? [key1, val1] : [key2, val2]
+		val1 < val2 ? d(key1, val1) : d(key2, val2)
 	), head) || head;
 	return minKey;
 };
 
 // Returns the VV with the same entries, but with counters at zero.
-export const resetCounters = (vv: Dot[]) => vv.map(([str]) => ([str, 0]));
+export const resetCounters = (dots: Dot[]) => dots.map(([str]) => d(str, 0));
 
 // Returns the VV without the entry with a given key.
-export const deleteKey = (vv: Dot[], id: string): Dot[] => {
-	const idx = vv.findIndex(([id0]) => id0 === id);
-	return idx > -1 ? [...vv.slice(0, idx), ...vv.slice(idx + 1)] : vv;
+export const deleteKey = (dots: Dot[], id: string): Dot[] => {
+	const newDots = dots.slice();
+	const idx = dots.findIndex(([id0]) => id0 === id);
+	if (idx > -1) {
+		newDots.splice(idx, 1);
+	}
+	return newDots;
 };

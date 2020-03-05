@@ -1,280 +1,328 @@
 import * as swc from '../swc-watermark';
-import { BVV, VVM, VV, Dot } from '../swc-types';
-
-const { isArray } = Array;
-
-// export type Dot = [string, number];
-// export type BaseBitmapPair = [number, number];
-// export type BVV = [string, BaseBitmapPair];
-// export type VV = [string, Dot[]];
-// export type VVM = [VV[], VV[]];
-// export type DotValuePair = [Dot, string];
-// export type DCC = [DotValuePair[], Dot[]];
-
-// class VersionVector extends Array {
-//     structType = "VV"
-//     constructor(source: [string, Dot[]]) {
-//         super();
-//         if (isArray(source)) {
-//             if (typeof source[0] === "string") {
-//                 this[0] = source[0];
-//             }
-//             if (isArray(source[1])) {
-//                 this[1] = source[1].filter((dot) => (
-//                     dot.structType && dot.structType === "Dot"
-//                 ));
-//             }
-//         }
-//     }
-// }
-
-const t = (
-    a: string,
-    b: number | Dot[]
-): Dot | VV => {
-    if (typeof a === "string") {
-        if (typeof b === "number") {
-            return [a, b] as Dot;
-        } else if (isArray(b)) {
-            return [a, b] as VV;
-        }
-    }
-};
-const l = (list: Dot[]): Dot[] => list;
+import { bbp, bvv, vvm, vv, d } from '../swc-types';
 
 describe('SWC Watermark', () => {
+    const C1 = [
+        bvv("a", bbp(12, 0)),
+        bvv("b", bbp(7, 0)),
+        bvv("c", bbp(4, 0)),
+        bvv("d", bbp(5, 0)),
+        bvv("e", bbp(5, 0)),
+        bvv("f", bbp(7, 10)),
+        bvv("g", bbp(5, 10)),
+        bvv("h", bbp(5, 14)),
+    ];
+    const C2 = [
+        bvv("a", bbp(5, 14)),
+        bvv("b", bbp(5, 14)),
+        bvv("c", bbp(50, 14)),
+        bvv("d", bbp(5, 14)),
+        bvv("e", bbp(15, 0)),
+        bvv("f", bbp(5, 14)),
+        bvv("g", bbp(7, 10)),
+        bvv("h", bbp(7, 10)),
+    ];
+    const M = vvm([], []);
+    const M1 = swc.updateCell(M, "a", "b", 4);
+    const M2 = swc.updateCell(M1, "a", "c", 10);
+    const M3 = swc.updateCell(M2, "c", "c", 2);
+    const M4 = swc.updateCell(M3, "c", "c", 20);
+    const M5 = swc.updateCell(M4, "c", "c", 15);
+    const M6 = swc.updatePeer(M5, "c", C1);
+    const M7 = swc.updatePeer(M5, "c", C2);
+    const M8 = swc.updatePeer(M5, "a", C1);
+    const M9 = swc.updatePeer(M5, "a", C2);
+    const M10 = swc.updatePeer(M5, "b", C1);
+    const M11 = swc.updatePeer(M5, "b", C2);
+    const N = vvm([
+        vv("c", [d("c", 4), d("d", 3), d("z", 0)]),
+        vv("d", [d("c", 0), d("d", 1), d("e", 2)]),
+        vv("z", [d("a", 0), d("c", 0), d("z", 0)]),
+    ], [
+        vv("b", [d("a", 2), d("b", 2), d("c", 3)]),
+    ]);
+
     it('update', () => {
-        const C1: BVV[] = [
-            ["a", [12, 0]],
-            ["b", [7, 0]],
-            ["c", [4, 0]],
-            ["d", [5, 0]],
-            ["e", [5, 0]],
-            ["f", [7, 10]],
-            ["g", [5, 10]],
-            ["h", [5, 14]],
-        ];
-        const C2: BVV[] = [
-            ["a", [5, 14]],
-            ["b", [5, 14]],
-            ["c", [50, 14]],
-            ["d", [5, 14]],
-            ["e", [15, 0]],
-            ["f", [5, 14]],
-            ["g", [7, 10]],
-            ["h", [7, 10]],
-        ];
-        const M = [ [], [] ] as VVM;
-        const M1 = swc.updateCell(M, "a", "b", 4);
-
         expect(M1).toEqual([
-            [t("a", [t("b", 4)] as Dot[])],
-            [],
+            [
+                ["a", [d("b", 4)]],
+            ],
+            [
+            ],
         ]);
-        const M2 = swc.updateCell(M1, "a", "c", 10);
-        expect(M2).toEqual([
-            [t("a", [t("b", 4), t("c", 10)] as Dot[])],
-            [],
-        ]);
-        const M3 = swc.updateCell(M2, "c", "c", 2);
-        expect(M3).toEqual([
-            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 2)] as Dot[])],
-            [],
-        ]);
-        const M4 = swc.updateCell(M3, "c", "c", 20);
-        expect(M4).toEqual([
-            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
-            [],
-        ]);
-        const M5 = swc.updateCell(M4, "c", "c", 15);
+        expect(M2).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+        ], []));
+        expect(M3).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("c", [d("c", 2)]),
+        ], []));
+        expect(M4).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("c", [d("c", 20)]),
+        ], []));
         expect(M4).toEqual(M5);
-        const M6 = swc.updatePeer(M5, "c", C1);
-        expect(M6).toEqual([
-            [t("a", [t("b", 4), t("c", 12)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
-            [],
-        ]);
-        const M7 = swc.updatePeer(M5, "c", C2);
-        expect(M7).toEqual([
-            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 50)] as Dot[])],
-            [],
-        ]);
-        const M8 = swc.updatePeer(M5, "a", C1);
-        expect(M8).toEqual([
-            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
-            [],
-        ]);
-        const M9 = swc.updatePeer(M5, "a", C2);
-        expect(M9).toEqual([
-            [t("a", [t("b", 4), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
-            [],
-        ]);
-        const M10 = swc.updatePeer(M5, "b", C1);
-        expect(M10).toEqual([
-            [t("a", [t("b", 12), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
-            [],
-        ]);
-        const M11 = swc.updatePeer(M5, "b", C2);
-        expect(M11).toEqual([
-            [t("a", [t("b", 5), t("c", 10)] as Dot[]), t("c", [t("c", 20)] as Dot[])],
-            [],
-        ]);
+        expect(M6).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 12)]),
+            vv("c", [d("c", 20)]),
+        ], []));
+        expect(M7).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("c", [d("c", 50)]),
+        ], []));
+        expect(M8).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("c", [d("c", 20)]),
+        ], []));
+        expect(M9).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("c", [d("c", 20)]),
+        ], []));
+        expect(M10).toEqual(vvm([
+            vv("a", [d("b", 12), d("c", 10)]),
+            vv("c", [d("c", 20)]),
+        ], []));
+        expect(M11).toEqual(vvm([
+            vv("a", [d("b", 5), d("c", 10)]),
+            vv("c", [d("c", 20)]),
+        ], []));
 
-        const N: VVM = [
-            [
-                t("c", [t("c", 4), t("d", 3), t("z", 0)] as Dot[]) as VV,
-                t("d", [t("c", 0), t("d", 1), t("e", 2)] as Dot[]) as VV,
-                t("z", [t("a", 0), t("c", 0), t("z", 0)] as Dot[]) as VV,
-            ],
-            [
-                t("b", [t("a", 2), t("b", 2), t("c", 3)] as Dot[]) as VV,
-            ],
-        ];
-        expect(swc.updatePeer(N, "a", C1)).toEqual([
-            [
-                t("c", [t("c", 4), t("d", 3), t("z", 0)] as Dot[]) as VV,
-                t("d", [t("c", 0), t("d", 1), t("e", 2)] as Dot[]) as VV,
-                t("z", [t("a", 0), t("c", 0), t("z", 0)] as Dot[]) as VV,
-            ],
-            [
-                t("b", [t("a", 7), t("b", 2), t("c", 3)] as Dot[]) as VV,
-            ],
-        ] as VVM);
-        expect(swc.updatePeer(N, "c", C2)).toEqual([
-            [
-                t("c", [t("c", 50), t("d", 3), t("z", 0)] as Dot[]) as VV,
-                t("d", [t("c", 5), t("d", 1), t("e", 2)] as Dot[]) as VV,
-                t("z", [t("a", 0), t("c", 0), t("z", 0)] as Dot[]) as VV,
-            ],
-            [
-                t("b", [t("a", 2), t("b", 2), t("c", 5)] as Dot[]) as VV,
-            ]
-        ] as VVM);
+        expect(swc.updatePeer(N, "a", C1)).toEqual(vvm([
+            vv("c", [d("c", 4), d("d", 3), d("z", 0)]),
+            vv("d", [d("c", 0), d("d", 1), d("e", 2)]),
+            vv("z", [d("a", 0), d("c", 0), d("z", 0)]),
+        ], [
+            vv("b", [d("a", 7), d("b", 2), d("c", 3)]),
+        ]));
+        expect(swc.updatePeer(N, "c", C2)).toEqual(vvm([
+            vv("c", [d("c", 50), d("d", 3), d("z", 0)]),
+            vv("d", [d("c", 5), d("d", 1), d("e", 2)]),
+            vv("z", [d("a", 0), d("c", 0), d("z", 0)]),
+        ], [
+            vv("b", [d("a", 2), d("b", 2), d("c", 5)]),
+        ]));
+    });
+
+    it('left join', () => {
+        const A = vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("c", [d("c", 20)]),
+            vv("z", [d("t1", 0), d("t2", 0), d("z", 0)]),
+        ], []);
+        const Z = vvm([
+            vv("a", [d("b", 5), d("c", 8), d("z", 2)]),
+            vv("c", [d("c", 20)]),
+            vv("z", [d("t1", 0), d("t2", 0), d("z", 0)]),
+        ], []);
+        const B = vvm([
+            vv("a", [d("b", 2), d("c", 10)]),
+            vv("b", []),
+            vv("c", [d("c", 22)]),
+        ], []);
+        const C = vvm([
+            vv("z", [d("a", 1), d("b", 0), d("z", 4)]),
+        ], []);
+        expect(swc.leftJoin(A, B)).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("c", [d("c", 22)]),
+            vv("z", [d("t1", 0), d("t2", 0), d("z", 0)]),
+        ], []));
+        expect(swc.leftJoin(A, Z)).toEqual(vvm([
+            vv("a", [d("b", 5), d("c", 10)]),
+            vv("c", [d("c", 20)]),
+            vv("z", [d("t1", 0), d("t2", 0), d("z", 0)]),
+        ], []));
+        expect(swc.leftJoin(A, C)).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("c", [d("c", 20)]),
+            vv("z", [d("t1", 0), d("t2", 0), d("z", 4)]),
+        ], []));
+        expect(swc.leftJoin(B, A)).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("b", []),
+            vv("c", [d("c", 22)]),
+        ], []));
+        expect(swc.leftJoin(B, C)).toEqual(B);
+        expect(swc.leftJoin(C, A)).toEqual(C);
+        expect(swc.leftJoin(C, B)).toEqual(C);
+    });
+
+    it.only('add peer', () => {
+        expect(swc.addPeer(swc.addPeer(M, "z", ["b", "a"]), "l", ["z", "y"]))
+        .toEqual(swc.addPeer(swc.addPeer(M, "l", ["y", "z"]), "z", ["a", "b"]));
+
+        expect(swc.addPeer(M, "z", ["a", "b"])).toEqual(vvm([
+            vv("z", [d("a", 0), d("b", 0), d("z", 0)])
+        ], []));
+
+        expect(swc.addPeer(M4, "z", ["t2", "t1"])).toEqual(vvm([
+            vv("a", [d("b", 4), d("c", 10)]),
+            vv("c", [d("c", 20)]),
+            vv("z", [d("t1", 0), d("t2", 0), d("z", 0)]),
+        ], []));
+    });
+
+    it('min', () => {
+        expect(swc.min(M, "a")).toEqual(0);
+        expect(swc.min(M1, "a")).toEqual(4);
+        expect(swc.min(M1, "b")).toEqual(0);
+        expect(swc.min(M4, "a")).toEqual(4);
+        expect(swc.min(M4, "c")).toEqual(20);
+        expect(swc.min(M4, "b")).toEqual(0);
+    });
+
+    it('peers', () => {
+        expect(swc.peers(M)).toEqual([]);
+        expect(swc.peers(M1)).toEqual(["a"]);
+        expect(swc.peers(M5)).toEqual(["a", "c"]);
+    });
+
+    it('get', () => {
+        expect(swc.get(M, "a", "a")).toEqual(0);
+        expect(swc.get(M1, "a", "a")).toEqual(0);
+        expect(swc.get(M1, "b", "a")).toEqual(0);
+        expect(swc.get(M4, "c", "c")).toEqual(20);
+        expect(swc.get(M4, "a", "c")).toEqual(10);
+    });
+
+    it('reset counters', () => {
+        expect(swc.resetCounters(M)).toEqual(M);
+        expect(swc.resetCounters(M1)).toEqual(vvm([
+            vv("a", [d("b", 0)]),
+        ], []));
+        expect(swc.resetCounters(M2)).toEqual(vvm([
+            vv("a", [d("b", 0), d("c", 0)]),
+        ], []));
+        expect(swc.resetCounters(M3)).toEqual(vvm([
+            vv("a", [d("b", 0), d("c", 0)]),
+            vv("c", [d("c", 0)]),
+        ], []));
+        expect(swc.resetCounters(M4)).toEqual(vvm([
+            vv("a", [d("b", 0), d("c", 0)]),
+            vv("c", [d("c", 0)]),
+        ], []));
+    });
+
+    it('delete peer', () => {
+        expect(swc.deletePeer(M1, "a")).toEqual(vvm([], []));
+        expect(swc.deletePeer(M1, "b")).toEqual(vvm([vv("a", [])], []));
+        expect(swc.deletePeer(M1, "c")).toEqual([[vv("a", [d("b", 4)])], []]);
+        expect(swc.deletePeer(M4, "a")).toEqual([[vv("c", [d("c", 20)])], []]);
+        expect(swc.deletePeer(M4, "c")).toEqual([[vv("a", [d("b", 4)])], []]);
+    });
+
+    it('replace peer', () => {
+        const A = swc.addPeer(vvm([], []), "a", ["b", "c"]);
+        const B = swc.addPeer(A, "b", ["a", "c"]);
+        const C = swc.addPeer(B, "c", ["a", "b"]);
+        const Z = vvm([
+            vv("a", [d("a",9), d("c", 2), d("z",3)]),
+            vv("c", [d("a",1), d("c", 4), d("z",3)]),
+            vv("z", [d("a",0), d("c", 1), d("z",2)]),
+        ], []);
+        const W = vvm([
+            vv("b", [d("a", 9), d("b", 2), d("c", 3)]),
+            vv("c", [d("b", 1), d("c", 4), d("d", 3)]),
+            vv("d", [d("c", 0), d("d", 1), d("e", 2)]),
+        ], []);
+
+        expect(swc.replacePeer(C, "b", "z")).toEqual(vvm([
+            vv("a", [d("a", 0), d("c", 0), d("z", 0)]),
+            vv("c", [d("a", 0), d("c", 0), d("z", 0)]),
+            vv("z", [d("a", 0), d("c", 0), d("z", 0)]),
+        ], []));
+        // [
+        //     [
+        //         ["a", [["a", 0], ["b", 0], ["c", 0]]],
+        //         ["b", [["a", 0], ["b", 0], ["c", 0]]],
+        //         ["c", [["a", 0], ["b", 0], ["c", 0]]],
+        //     ],
+        //     []
+        // ]
+        expect(swc.replacePeer(Z, "a", "b")).toEqual(vvm([
+            vv("b", [d("b", 0), d("c", 0), d("z", 0)]),
+            vv("c", [d("b", 0), d("c", 4), d("z", 3)]),
+            vv("z", [d("b", 0), d("c", 1), d("z", 2)]),
+        ], []));
+        expect(swc.replacePeer(W, "b", "z")).toEqual(vvm([
+            vv("c", [d("c", 4), d("d", 3), d("z", 0)]),
+            vv("d", [d("c", 0), d("d", 1), d("e", 2)]),
+            vv("z", [d("a", 0), d("c", 0), d("z", 0)]),
+        ], []));
+        expect(swc.replacePeer(W, "a", "z")).toEqual(vvm([
+            vv("b", [d("b", 2), d("c", 3), d("z", 0)]),
+            vv("c", [d("b", 1), d("c", 4), d("d", 3)]),
+            vv("d", [d("c", 0), d("d", 1), d("e", 2)]),
+        ], []));
     });
 /*
-left_join_test() ->
-    A = {[{"a",[{"b",4}, {"c",10}]}, {"c",[{"c",20}]}, {"z",[{"t1",0},{"t2",0},{"z",0}]}], []},
-    Z = {[{"a",[{"b",5}, {"c",8}, {"z",2}]}, {"c",[{"c",20}]}, {"z",[{"t1",0},{"t2",0},{"z",0}]}], []},
-    B = {[{"a",[{"b",2}, {"c",10}]}, {"b",[]}, {"c",[{"c",22}]}], []},
-    C = {[{"z",[{"a",1}, {"b",0}, {"z",4}]}], []},
-    expect( left_join(A,B), {[{"a",[{"b",4},{"c",10}]}, {"c",[{"c",22}]}, {"z",[{"t1",0},{"t2",0},{"z",0}]}], []}),
-    expect( left_join(A,Z), {[{"a",[{"b",5},{"c",10}]}, {"c",[{"c",20}]}, {"z",[{"t1",0},{"t2",0},{"z",0}]}], []}),
-    expect( left_join(A,C), {[{"a",[{"b",4},{"c",10}]}, {"c",[{"c",20}]}, {"z",[{"t1",0},{"t2",0},{"z",4}]}], []}),
-    expect( left_join(B,A), {[{"a",[{"b",4},{"c",10}]}, {"b",[]}, {"c",[{"c",22}]}], []}),
-    expect( left_join(B,C), B),
-    expect( left_join(C,A), C),
-    expect( left_join(C,B), C).
-*/
-    // it.skip('add peer', () => {
-    //     const M: VVM = [[], []];
-    //     // const M1 = swc.updateCell(M, "a", "b", 4);
-    //     // const M2 = swc.updateCell(M1, "a", "c", 10);
-    //     // const M3 = swc.updateCell(M2, "c", "c", 2);
-    //     // const M4 = swc.updateCell(M3, "c", "c", 20);
-    //     const expected = swc.addPeer(swc.addPeer(M, "z", ["b", "a"]), "l", ["z", "y"]);
-    //     const actual = swc.addPeer(swc.addPeer(M, "l", ["y", "z"]), "z", ["a", "b"]);
-    //     console.log(JSON.stringify(expected, null, '\t'));
-    //     console.log(JSON.stringify(actual, null, '\t'));
-    //     expect(expected).toEqual(actual);
-    //     expect(swc.addPeer(M, "z",["a","b"])).toEqual([[t("z", [t("a", 0), t("b", 0), t("z", 0)] as Dot[])], []]);
-    //     // expect(swc.addPeer(M4, "z",["t2","t1"]), {[{"a",[{"b",4}, {"c",10}]}, {"c",[{"c",20}]}, {"z",[{"t1",0},{"t2",0},{"z",0}]}], []}).
-    // });
-/*
-min_test() ->
-    M = new(),
-    M1 = swc.updateCell(M, "a", "b",4),
-    M2 = swc.updateCell(M1, "a", "c",10),
-    M3 = swc.updateCell(M2, "c", "c",2),
-    M4 = swc.updateCell(M3, "c", "c",20),
-    expect( min(M, "a"), 0),
-    expect( min(M1, "a"), 4),
-    expect( min(M1, "b"), 0),
-    expect( min(M4, "a"), 4),
-    expect( min(M4, "c"), 20),
-    expect( min(M4, "b"), 0).
+    it('retire peer', () => {
+        const A = swc.addPeer(vvm([], []), "a", ["b","c"]);
+        const B = swc.addPeer(A,     "b", ["a","c"]);
+        const C = swc.addPeer(B,     "c", ["a","b"]);
+        const Z = vvm([
+            vv("a", [d("a", 9), d("c", 2), d("z", 3)]),
+            vv("c", [d("a", 1), d("c", 4), d("z", 3)]),
+            vv("z", [d("a", 0), d("c", 1), d("z", 2)]),
+        ],
+        []);
+        const W = vvm([
+            vv("b", [d("a", 9), d("b", 2), d("c", 3)]),
+            vv("c", [d("b", 1), d("c", 4), d("d", 3)]),
+            vv("d", [d("c", 0), d("d", 1), d("e", 2)]),
+        ], []);
+        expect(swc.retirePeer(C, "b", "z")).toEqual(vvm([
+            vv("a", [d("a", 0), d("c", 0), d("z", 0)]),
+            vv("c", [d("a", 0), d("c", 0), d("z", 0)]),
+            vv("z", [d("a", 0), d("c", 0), d("z", 0)]),
+        ],
+        [
+            vv("b", [d("a", 0), d("c", 0), d("z", 0)]),
+        ]));
+        expect(swc.retirePeer(Z, "a", "b")).toEqual(vvm([
+            vv("b", [d("b", 0), d("c", 0), d("z", 0)]),
+            vv("c", [d("b", 0), d("c", 4), d("z", 3)]),
+            vv("z", [d("b", 0), d("c", 1), d("z", 2)]),
+        ],
+        [
+            vv("a", [d("b", 0), d("c", 2), d("z", 3)]),
+        ]));
+        expect(swc.retirePeer(W, "b", "z")).toEqual(vvm([
+            vv("c", [d("c", 4), d("d", 3), d("z", 0)]),
+            vv("d", [d("c", 0), d("d", 1), d("e", 2)]),
+            vv("z", [d("a", 0), d("c", 0), d("z", 0)]),
+        ],
+        [
+            vv("b", [d("a", 9), d("c", 3), d("z", 0)]),
+        ]));
+        expect(swc.retirePeer(W, "a", "z")).toEqual(vvm([
+            vv("b", [d("b", 2), d("c", 3), d("z", 0)]),
+            vv("c", [d("b", 1), d("c", 4), d("d", 3)]),
+            vv("d", [d("c", 0), d("d", 1), d("e", 2)]),
+        ], []));
+    });
 
-peers_test() ->
-    M = new(),
-    M1 = swc.updateCell(M, "a", "b",4),
-    M2 = swc.updateCell(M1, "a", "c",10),
-    M3 = swc.updateCell(M2, "c", "c",2),
-    M4 = swc.updateCell(M3, "c", "c",20),
-    M5 = swc.updateCell(M4, "c", "c",15),
-    expect( peers(M), []),
-    expect( peers(M1), ["a"]),
-    expect( peers(M5), ["a", "c"]).
-
-
-get_test() ->
-    M = new(),
-    M1 = swc.updateCell(M, "a", "b",4),
-    M2 = swc.updateCell(M1, "a", "c",10),
-    M3 = swc.updateCell(M2, "c", "c",2),
-    M4 = swc.updateCell(M3, "c", "c",20),
-    expect( get(M, "a", "a"), 0),
-    expect( get(M1, "a", "a"), 0),
-    expect( get(M1, "b", "a"), 0),
-    expect( get(M4, "c", "c"), 20),
-    expect( get(M4, "a", "c"), 10).
-
-reset_counters_test() ->
-    M = new(),
-    M1 = swc.updateCell(M, "a", "b",4),
-    M2 = swc.updateCell(M1, "a", "c",10),
-    M3 = swc.updateCell(M2, "c", "c",2),
-    M4 = swc.updateCell(M3, "c", "c",20),
-    expect( reset_counters(M), M),
-    expect( reset_counters(M1), {[{"a",[{"b",0}]}], []}),
-    expect( reset_counters(M2), {[{"a",[{"b",0}, {"c",0}]}], []}),
-    expect( reset_counters(M3), {[{"a",[{"b",0}, {"c",0}]}, {"c",[{"c",0}]}], []}),
-    expect( reset_counters(M4), {[{"a",[{"b",0}, {"c",0}]}, {"c",[{"c",0}]}], []}).
-
-delete_peer_test() ->
-    M = new(),
-    M1 = swc.updateCell(M, "a", "b",4),
-    M2 = swc.updateCell(M1, "a", "c",10),
-    M3 = swc.updateCell(M2, "c", "c",2),
-    M4 = swc.updateCell(M3, "c", "c",20),
-    expect( delete_peer(M1, "a"), {[], []}),
-    expect( delete_peer(M1, "b"), {[{"a",[]}], []}),
-    expect( delete_peer(M1, "c"), {[{"a",[{"b",4}]}], []}),
-    expect( delete_peer(M4, "a"), {[{"c",[{"c",20}]}], []}),
-    expect( delete_peer(M4, "c"), {[{"a",[{"b",4}]}], []}).
-
-replace_peer_test() ->
-    A = add_peer(new(), "a", ["b","c"]),
-    B = add_peer(A,     "b", ["a","c"]),
-    C = add_peer(B,     "c", ["a","b"]),
-    Z = {[{"a",[{"a",9},{"c",2},{"z",3}]}, {"c",[{"a",1},{"c",4},{"z",3}]}, {"z", [{"a",0},{"c",1},{"z",2}]}], []},
-    W = {[{"b",[{"a",9},{"b",2},{"c",3}]}, {"c",[{"b",1},{"c",4},{"d",3}]}, {"d", [{"c",0},{"d",1},{"e",2}]}], []},
-    expect( replace_peer(C,"b","z"), {[{"a",[{"a",0},{"c",0},{"z",0}]}, {"c",[{"a",0},{"c",0},{"z",0}]}, {"z", [{"a",0},{"c",0},{"z",0}]}], []}),
-    expect( replace_peer(Z,"a","b"), {[{"b",[{"b",0},{"c",0},{"z",0}]}, {"c",[{"b",0},{"c",4},{"z",3}]}, {"z", [{"b",0},{"c",1},{"z",2}]}], []}),
-    expect( replace_peer(W,"b","z"), {[{"c",[{"c",4},{"d",3},{"z",0}]}, {"d",[{"c",0},{"d",1},{"e",2}]}, {"z", [{"a",0},{"c",0},{"z",0}]}], []}),
-    expect( replace_peer(W,"a","z"), {[{"b",[{"b",2},{"c",3},{"z",0}]}, {"c",[{"b",1},{"c",4},{"d",3}]}, {"d", [{"c",0},{"d",1},{"e",2}]}], []}).
-
-retire_peer_test() ->
-    A = add_peer(new(), "a", ["b","c"]),
-    B = add_peer(A,     "b", ["a","c"]),
-    C = add_peer(B,     "c", ["a","b"]),
-    Z = {[{"a",[{"a",9},{"c",2},{"z",3}]}, {"c",[{"a",1},{"c",4},{"z",3}]}, {"z", [{"a",0},{"c",1},{"z",2}]}], []},
-    W = {[{"b",[{"a",9},{"b",2},{"c",3}]}, {"c",[{"b",1},{"c",4},{"d",3}]}, {"d", [{"c",0},{"d",1},{"e",2}]}], []},
-    expect( retire_peer(C,"b","z"),
-                  {[{"a",[{"a",0},{"c",0},{"z",0}]}, {"c",[{"a",0},{"c",0},{"z",0}]}, {"z", [{"a",0},{"c",0},{"z",0}]}], [{"b",[{"a",0},{"c",0},{"z",0}]}]}),
-    expect( retire_peer(Z,"a","b"),
-                  {[{"b",[{"b",0},{"c",0},{"z",0}]}, {"c",[{"b",0},{"c",4},{"z",3}]}, {"z", [{"b",0},{"c",1},{"z",2}]}], [{"a",[{"b",0},{"c",2},{"z",3}]}]}),
-    expect( retire_peer(W,"b","z"),
-                  {[{"c",[{"c",4},{"d",3},{"z",0}]}, {"d",[{"c",0},{"d",1},{"e",2}]}, {"z", [{"a",0},{"c",0},{"z",0}]}], [{"b",[{"a",9},{"c",3},{"z",0}]}]}),
-    expect( retire_peer(W,"a","z"),
-                  {[{"b",[{"b",2},{"c",3},{"z",0}]}, {"c",[{"b",1},{"c",4},{"d",3}]}, {"d", [{"c",0},{"d",1},{"e",2}]}], []}).
-
-prune_retired_peers_test() ->
-    D1 = [{"a",[1,2,22]}, {"b",[4,5,11]}],
-    D2 = [{"a",[1,2,22]}, {"z",[4,5,11]}],
-    A = {[{"a",[{"a",0},{"c",0},{"z",0}]}, {"c",[{"a",0},{"c",0},{"z",0}]}, {"z", [{"a",0},{"c",0},{"z",0}]}], [{"b",[{"a",0},{"b",0},{"c",0}]}]},
-    A2 = {[{"a",[{"a",0},{"c",0},{"z",0}]}, {"c",[{"a",0},{"c",0},{"z",0}]}, {"z", [{"a",0},{"c",0},{"z",0}]}], []},
-    expect( prune_retired_peers(A, D1, []), A),
-    expect( prune_retired_peers(A, D1, ["a", "b","c","z"]), A),
-    expect( prune_retired_peers(A, D2, []), A2),
-    expect( prune_retired_peers(A, D2, ["b"]), A),
-    expect( prune_retired_peers(A, [], []), A2).
+    it('prune retired peers', () => {
+        const D1 = [dkm("a", [1,2,22]), dkm("b", [4,5,11])];
+        const D2 = [dkm("a", [1,2,22]), dkm("z", [4,5,11])];
+        const A = vvm([
+            vv("a", [d("a", 0), d("c", 0), d("z", 0)]),
+            vv("c", [d("a", 0), d("c", 0), d("z", 0)]),
+            vv("z", [d("a", 0), d("c", 0), d("z", 0)]),
+        ],
+        [
+            vv("b", [d("a", 0), d("b", 0), d("c", 0)]),
+        ]);
+        const A2 = vvm([
+            vv("a", [d("a", 0), d("c", 0), d("z", 0)]),
+            vv("c", [d("a", 0), d("c", 0), d("z", 0)]),
+            vv("z", [d("a", 0), d("c", 0), d("z", 0)]),
+        ], []);
+        expect(swc.pruneRetiredPeers(A, D1, [])).toEqual(A);
+        expect(swc.pruneRetiredPeers(A, D1, ["a", "b", "c", "z"])).toEqual(A);
+        expect(swc.pruneRetiredPeers(A, D2, [])).toEqual(A2);
+        expect(swc.pruneRetiredPeers(A, D2, ["b"])).toEqual(A);
+        expect(swc.pruneRetiredPeers(A, [], [])).toEqual(A2);
+    });
 */
 });

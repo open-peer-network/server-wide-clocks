@@ -1,69 +1,76 @@
-import { Dot, BVV, VV, VVM } from './swc-types';
+import { vv, d, vvm, VV, BVV, VVM, Dot, OrderedList } from './swc-types';
 import { storeById } from './erlang-helpers';
-import * as cloneDeep from 'lodash.clonedeep';
+// import { store } from './erlang-helpers';
 import * as swcNode from './swc-node';
+// import * as swcDkm from './swc-dotkeymatrix';
 import * as swcVv from './swc-vv';
 
+// const { isArray } = Array;
 
 export const addPeer = (
-	[bvvA, bvvB]: VVM,
+	[bvvA, bvvB]: [OrderedList<VV>, OrderedList<VV>],
 	newPeerId: string,
 	itsPeers: string[],
 ): VVM => {
-	const newEntry = [newPeerId, ...itsPeers].reduce((acc, id) => (
-		swcVv.add(acc, [id, 0] as Dot)
+	const newEntry: VV[] = [newPeerId, ...itsPeers].reduce((acc, id) => (
+		swcVv.add(acc, d(id, 0)).sort(([s1], [s2]) => Number(s1 > s2))
 	), []);
-	return [storeById(newPeerId, newEntry, bvvA), bvvB];
+	// const newEntry: Dot[] = itsPeers.reduce((acc, id) => (
+	// 	swcVv.add(acc, d(id, 0))
+	// ), []);
+	return vvm(storeById(newPeerId, newEntry, bvvA), bvvB);
+	// return vvm(store(vv(newPeerId, newEntry), bvvA), bvvB);
 };
 
 export const updatePeer = (
 	[bvvA, bvvB]: VVM,
 	entryId: string,
 	nodeClock: BVV[],
-): VVM => ([
+): VVM => vvm(
 	updatePeerAux(bvvA, entryId, nodeClock),
 	updatePeerAux(bvvB, entryId, nodeClock),
-]);
+);
 
 const updatePeerAux = (
-	vv: VV[],
+	vvA: VV[],
 	entryId: string,
 	nodeClock: BVV[],
 ): VV[] => (
-	vv.map(([id, oldVV]) => {
-		if (oldVV.some(([dotId]) => dotId === entryId)) {
+	vvA.map(([id, dot]: VV) => {
+		if (dot.some(([dotId]) => dotId === entryId)) {
 			const [base] = swcNode.get(id, nodeClock);
-			return [id, swcVv.add(oldVV, [entryId, base])];
+			return vv(id, swcVv.add(dot, d(entryId, base)));
 		} else {
-			return [id, oldVV];
+			return vv(id, dot);
 		}
-	})
+	}).sort(([a], [b]) => Number(a > b))
 );
-/*
-// -spec replace_peer(vv_matrix(), Old::id(), New::id()) -> vv_matrix()
-const replacePeer = (
-	[M, R]: VVM,
+
+export const replacePeer = (
+	vvm1: VVM,
 	oldId: string,
 	newId: string,
 ): VVM => {
-	let M3;
-	if (M.some(([id]) => id === oldId)) {
-		const oldPeers0 = swcVv.ids(orddict.fetch(oldId, M));
-		const oldPeers = lists.delete(oldId, oldPeers0);
-		const [M2, R2] = addPeer([M, R], newId, oldPeers);
-		const M3 = orddict.erase(oldId, M2);
-	} else {
-		M3 = M;
-	}
-	const fn = (_K, V) => {
-		if (orddict.find(old, V)) {
-			const V2 = swcVv.deleteKey(V, old);
-			return swcVv.add(V2, [newId, 0]);
+	const [vvL, vvR] = vvm1;
+	const found = vvL.find(([id]: VV) => id === oldId);
+
+	const filteredDots = (dots: Dot[]): string[] => (
+		dots.map(([id]) => id).filter((id) => id !== oldId)
+	);
+	const newVvm = (dots: Dot[]) => (
+		addPeer(vvm1, newId, filteredDots(dots))[0]
+	);
+	const vvL2 = found ? newVvm(found[1]) : vvL;
+
+	const fn = (vvX: VV): VV => {
+		const [id, dots] = vvX;
+		if (dots.some(([idX]) => idX === oldId)) {
+			return vv(id, swcVv.add(swcVv.deleteKey(dots, oldId), d(newId, 0)));
 		} else {
-			return V;
+			return vvX;
 		}
 	};
-	return [orddict.map(fn, M3), orddict.map(fn, R)];
+	return vvm(vvL2.map(fn), vvR.map(fn));
 };
 
 /*
@@ -78,80 +85,100 @@ case orddict.find(Old, M) of
 		R1 = orddict.store(Old, OldEntry, R),
 		replace_peer({M,R1}, Old, New)
 end.
-
-
--spec left_join(vv_matrix(), vv_matrix()) -> vv_matrix().
-left_join({MA,RA},{MB,RB}) ->
-	{left_join_aux(MA,MB), left_join_aux(RA,RB)}.
-
-left_join_aux(A,B) ->
-	// filter entry peers from B that are not in A
-	PeersA = orddict.fetch_keys(A),
-	FunFilter = fun (Id,_) -> lists.member(Id, PeersA) end,
-	B2 = orddict.filter(FunFilter, B),
-	orddict.merge(fun (_,V1,V2) -> swcVv.left_join(V1,V2) end, A, B2).
 */
-// -spec update_cell(vv_matrix(), id(), id(), counter()) -> vv_matrix().
+
+export const leftJoin = (
+	[a1, a2]: VVM,
+	[b1, b2]: VVM,
+): VVM => {
+	return vvm(leftJoinAux(a1, b1), leftJoinAux(a2, b2));
+};
+
+export const leftJoinAux = (
+	vv1: VV[],
+	vv2: VV[],
+): VV[] => {
+	const peers: string[] = vv1.map(([id]) => id);
+
+	// filter entry peers from B that are not in A
+	const vv2b = vv2.filter(([id]) => peers.includes(id));
+
+	const merged: { [k: string]: Dot[] } = [...vv1, ...vv2b].reduce((acc, [id, vv0]: VV) => {
+		acc[id] = acc[id] ? swcVv.leftJoin(acc[id], vv0) : vv0 as Dot[];
+		return acc;
+	}, {});
+
+	return Object.entries(merged)
+	.map(([id, dots]) => vv(id, dots))
+	.sort(([a], [b]) => Number(a > b));
+};
+
 export const updateCell = (
-	[bvvA, bvvB]: VVM,
+	[vvA1, vvB1]: VVM,
 	entryId: string,
 	peerId: string,
 	counter: number,
 ): VVM => {
-	const topDot: Dot = [peerId, counter];
-	const bvvC = cloneDeep(bvvA);
-	const idx = bvvC.findIndex(([id]) => id === entryId);
-	if (idx > -1) {
-		const dots = bvvC[idx][1];
-		bvvC[idx][1] = swcVv.add(dots, topDot);
-		return [
-			bvvC,
-			bvvB,
-		];
-	} else {
-		bvvC.push([entryId, swcVv.add([], topDot)]);
-		return [
-			bvvC.sort(([id1], [id2]) => Number(id1 > id2)),
-			bvvB,
-		];
+	const newDot = d(peerId, counter);
+
+	let match = false;
+	const vvA2 = vvA1.map((vv0) => {
+		if (vv0[0] === entryId) {
+			match = true;
+			return vv(vv0[0], swcVv.add(vv0[1], newDot));
+		}
+		return vv(vv0[0], vv0[1].map(([s, n]) => d(s, n)));
+	});
+	if (!match) {
+		vvA2.push(vv(entryId, [newDot]));
 	}
+
+	return vvm(vvA2.sort(([a], [b]) => Number(a > b)), vvB1);
 };
+
+export const min = (
+	[vvL, vvR]: VVM,
+	id: string,
+): number => (
+	Math.max(minAux(vvL, id), minAux(vvR, id))
+);
+
+export const minAux = (
+	vv1: VV[],
+	id: string,
+): number => {
+	const vv2 = vv1.find(([id0]) => id0 === id);
+	return vv2 ? swcVv.min(vv2[1]) : 0;
+};
+
+export const peers = ([vva]: VVM): string[] => vva.map(([id]) => id);
+
+export const get = (
+	[vva]: VVM,
+	p1: string,
+	p2: string,
+): number => {
+	const match = vva.find(([id]) => id === p1);
+	return match ? swcVv.get(p2, match[1]) : 0;
+};
+
+export const resetCounters = ([a, b]: VVM): VVM => vvm(
+	a.map(([id, dots]) => vv(id, swcVv.resetCounters(dots))),
+	b.map(([id, dots]) => vv(id, swcVv.resetCounters(dots))),
+);
+
+export const deletePeer = ([vva, vvb]: VVM, id: string): VVM => vvm(
+	vva.filter(([i]) => i !== id).map(([s, ds]) => vv(s, swcVv.deleteKey(ds, id))),
+	vvb,
+);
+
 /*
--spec min(vv_matrix(), id()) -> counter().
-min({M,R}, Id) ->
-max(min_aux(M, Id), min_aux(R, Id)).
-
-min_aux(M, Id) ->
-case orddict.find(Id, M) of
-	error -> 0;
-	{ok, VV} -> swcVv.min(VV)
-end.
-
--spec peers(vv_matrix()) -> [id()].
-peers({M,_}) ->
-orddict.fetch_keys(M).
-
--spec get(vv_matrix(), id(), id()) -> counter().
-get({M,_}, P1, P2) ->
-case orddict.find(P1, M) of
-	error -> 0;
-	{ok, VV} -> swcVv.get(P2, VV)
-end.
-
--spec reset_counters(vv_matrix()) -> vv_matrix().
-reset_counters({M,R}) ->
-{orddict.map(fun (_Id,VV) -> swcVv.reset_counters(VV) end, M),
-orddict.map(fun (_Id,VV) -> swcVv.reset_counters(VV) end, R)}.
-
--spec delete_peer(vv_matrix(), id()) -> vv_matrix().
-delete_peer({M,R}, Id) ->
-M2 = orddict.erase(Id, M),
-{orddict.map(fun (_Id,VV) -> swcVv.delete_key(VV, Id) end, M2), R}.
-
--spec prune_retired_peers(vv_matrix(), key_matrix(), [id()]) -> vv_matrix().
-prune_retired_peers({M,R}, DKM, DontRemotePeers) ->
-{M, orddict.filter(fun (Peer,_) ->
-						   swc_dotkeymap:is_key(DKM, Peer) orelse
-						   lists.member(Peer, DontRemotePeers)
-				   end, R)}.
+export const pruneRetiredPeers = (
+	[a, b]: VVM,
+	dkm: DKM[],
+	dontRemotePeers: string[],
+): VVM => vvm(a, b.filter((peer) => (
+	swcDkm.isKey(dkm, peer) ||
+	dontRemotePeers.includes(peer)
+)));
 */

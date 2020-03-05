@@ -1,16 +1,16 @@
-import { Dot, DCC, DotValuePair, BVV } from './swc-types';
+import { d, dvp, dcc, Dot, DCC, DVP, BVV, prim } from './swc-types';
 import { storeByDot } from './erlang-helpers';
 import * as swcVv from './swc-vv';
 import * as swcNode from './swc-node';
 
 // Returns the set of values held in the DCC.
-export const values = ([values]: DCC): string[] => (
+export const values = ([values]: DCC): prim[] => (
 	values.map(([, v]) => v)
 );
 
 // Returns the causal context of a DCC, which is representable as a 
 // Version Vector.
-export const context = ([, dots]: DCC) => dots;
+export const context = ([, dots]: DCC): Dot[] => dots;
 
 // Performs the synchronization of two DCCs; it discards versions (
 // {dot,value} pairs) made obsolete by the other DCC, by preserving the
@@ -21,11 +21,11 @@ export const context = ([, dots]: DCC) => dots;
 export const sync = (
 	[dvp1, dots1]: DCC,
 	[dvp2, dots2]: DCC,
-) => {
+): DCC => {
 	// if two versions have the same dot, they must have the same value also.
 	// merge the two DCC's.
-	const merged: DotValuePair[] = Object.values([...dvp1, ...dvp2].reduce((acc, [dot, val]) => {
-		acc[dot.join()] = [dot, val];
+	const merged: DVP[] = Object.values([...dvp1, ...dvp2].reduce((acc, [dot, val]) => {
+		acc[dot.join()] = dvp(dot, val);
 		return acc;
 	}, {}));
 
@@ -40,9 +40,9 @@ export const sync = (
 		dot1.join() === dot2.join()
 	)));
 	// add these versions to the filtered list of versions
-	const D = [...current, ...filtered];
+	const dvps = [...current, ...filtered];
 	// return the new list of version and the merged VVs
-	return [D, swcVv.join(dots1, dots2)];
+	return dcc(dvps, swcVv.join(dots1, dots2));
 };
 
 // Adds the dots corresponding to each version in the DCC to the BVV; this
@@ -50,11 +50,11 @@ export const sync = (
 // the function swc_node:add/2 defined over BVV and dots, the BVV, and the list of
 // dots in the DCC.
 export const addBVV = (
-	bvv: BVV[],
+	someBvv: BVV[],
 	[versions]: DCC,
 ): BVV[] => {
 	const dots = versions.map(([k]) => k);
-	return dots.reduce((acc, item) => swcNode.add(acc, item), bvv);
+	return dots.reduce((acc, item) => swcNode.add(acc, item), someBvv);
 };
 
 // This function is to be used at node I after dcc:discard/2, and adds a
@@ -62,23 +62,23 @@ export const addBVV = (
 // swc_node:event/2 to the BVV at node I) to the Value, to the DCC, and also advances
 // the i component of the VV in the DCC to N.
 export const addDCC = (
-	[dvp, dccDot]: DCC,
+	[someDvp, dccDot]: DCC,
 	dot: Dot,
 	value: string,
-): DCC => ([
-	storeByDot(dot, value, dvp),
+): DCC => dcc(
+	storeByDot(dot, value, someDvp),
 	swcVv.add(dccDot, dot),
-]);
+);
 
 // It discards versions in DCC {D,V} which are made obsolete by a causal
 // context (a version vector) C, and also merges C into DCC causal context V.
 export const discard = (
 	[dvps, ccDots]: DCC,
 	dot: Dot[],
-) => ([
+): DCC => dcc(
 	dvps.filter(([[id, count]]) => count > swcVv.get(id, dot)),
 	swcVv.join(ccDots, dot),
-]);
+);
 
 // It discards all entries from the version vector V in the DCC that are
 // covered by the corresponding base component of the BVV B; only entries with
@@ -86,45 +86,43 @@ export const discard = (
 // being stripped of their causality information that is already present in the
 // node clock BVV.
 export const strip = (
-	[dvp, dots]: DCC,
-	bvv: BVV[],
-): DCC => ([
-	dvp,
-	dots.filter(([id, count]: Dot) => (
-		Number(count > swcNode.get(id, bvv)[0])
-	)),
-]);
+	[someDvp, dots]: DCC,
+	someBvv: BVV[],
+): DCC => dcc(
+	someDvp,
+	dots.filter(([id, n]: Dot) => Number(n > swcNode.get(id, someBvv)[0])),
+);
 
 // Function fill/2 adds back causality information to a stripped DCC, before
 // any operation is performed.
 export const fill2 = (
-	[dvp, dots]: DCC,
-	bvv: BVV[],
-): DCC => ([
-	dvp,
-	bvv.reduce((acc, [id]: BVV) => {
-		const [base] = swcNode.get(id, bvv);
-		return swcVv.add(acc, [id, base]);
+	[someDvp, dots]: DCC,
+	someBvv: BVV[],
+): DCC => dcc(
+	someDvp,
+	someBvv.reduce((acc, [id]: BVV) => {
+		const [base] = swcNode.get(id, someBvv);
+		return swcVv.add(acc, d(id, base));
 	}, dots),
-]);
+);
 
 // Same as fill/2 but only adds entries that are elements of a list of Ids,
 // instead of adding all entries in the BVV.
 export const fill3 = (
-	[dvp, dots]: DCC,
-	bvv: BVV[],
+	[someDvp, dots]: DCC,
+	someBvv: BVV[],
 	ids: string[],
 ): DCC => {
 	// only consider ids that belong to both the list of ids received and the BVV
-	const cross = bvv
+	const cross = someBvv
 	.map(([id]) => id)
 	.filter((id) => ids.includes(id))
-	.concat(ids.filter((id0) => bvv.some(([id1]) => id1 === id0)));
-	return [
-		dvp,
+	.concat(ids.filter((id0) => someBvv.some(([id1]) => id1 === id0)));
+	return dcc(
+		someDvp,
 		cross.reduce((acc, id) => {
-			const [base] = swcNode.get(id, bvv);
-			return swcVv.add(acc, [id, base]);
+			const [base] = swcNode.get(id, someBvv);
+			return swcVv.add(acc, d(id, base));
 		}, dots),
-	];
+	);
 };

@@ -1,31 +1,30 @@
-import { Dot, BaseBitmapPair, BVV } from './swc-types';
+import { bbp, bvv, d, Dot, BBP, BVV } from './swc-types';
 
-const { isArray } = Array;
 
 // Returns the entry of a BVV associated with a given ID.
 export const get = (
-	bbp: string,
-	bvv: BVV[],
-): BaseBitmapPair => {
-	const match = bvv.find(([id]) => id === bbp);
+	someBbp: string,
+	someBvv: BVV[],
+): BBP => {
+	const match = someBvv.find(([id]) => id === someBbp);
 	return match ? match[1] : [0, 0];
 };
 
 // Normalizes an entry pair, by removing dots and adding them to the base
 // if they are contiguous with the base.
 export const norm = (
-	[baseCounter, bitmap]: BaseBitmapPair
-): BaseBitmapPair => (
-	bitmap % 2 ? norm([baseCounter + 1, bitmap >> 1]) : [baseCounter, bitmap]
+	[baseCounter, bitmap]: BBP
+): BBP => (
+	bitmap % 2 ? norm(bbp(baseCounter + 1, bitmap >> 1)) : bbp(baseCounter, bitmap)
 );
 
 // Normalizes all entries in the BVV, using norm.
-export const normBvv = (bvv: BVV[]): BVV[] => (
-	bvv
+export const normBvv = (bvvA: BVV[]): BVV[] => (
+	bvvA
 	// normalize all entries
-	.map(([key, bvv]): BVV => ([key, norm(bvv)]))
+	.map(([key, bvvB]): BVV => (bvv(key, norm(bvvB))))
 	// remove `[0,0]` entries
-	.filter(([, bvv]) => bvv.join(',') !== '0,0')
+	.filter(([, bvvC]) => bvvC.join(',') !== '0,0')
 	// sort by node ID's
 	.sort(([id1], [id2]) => Number(id1 > id2))
 );
@@ -37,15 +36,15 @@ export const missingDots = (
 	nc2: BVV[],
 	ids: string[],
 ): BVV[] => (
-	nc1.length < 1 ? [] : nc1.reduce((acc, [id, bvv]) => {
+	nc1.length < 1 ? [] : nc1.reduce((acc, [id, bvvA]) => {
 		if (ids.includes(id)) {
 			const idx = nc2.findIndex(([id0]) => id === id0);
 			if (idx > -1) {
-				const result = subtractDots(bvv, nc2[idx][1]);
+				const result = subtractDots(bvvA, nc2[idx][1]);
 				if (result.length === 0) return acc;
 				return [[id, result], ...acc];
 			} else {
-				return [[id, values(bvv)], ...acc];
+				return [[id, values(bvvA)], ...acc];
 			}
 		} else {
 			return acc;
@@ -54,8 +53,8 @@ export const missingDots = (
 );
 
 export const subtractDots = (
-	[count1, bitmap1]: BaseBitmapPair,
-	[count2, bitmap2]: BaseBitmapPair,
+	[count1, bitmap1]: BBP,
+	[count2, bitmap2]: BBP,
 ): number[] => {
 	const [dots1, dots2] = count1 > count2 ? [
 		seq(count2 + 1, count1).concat(valuesAux(count1, bitmap1, [])),
@@ -77,7 +76,7 @@ export const seq = (start: number = 0, end: number = 1) => {
 };
 
 // Returns the sequence numbers for the dots represented by an entry.
-export const values = ([baseCounter, bitmap]: BaseBitmapPair) => (
+export const values = ([baseCounter, bitmap]: BBP) => (
 	seq(1, baseCounter).concat(valuesAux(baseCounter, bitmap, []))
 );
 
@@ -100,35 +99,40 @@ export const add = (
 	clocks: BVV[],
 	[id, counter]: Dot,
 ): BVV[] => {
-	const initial = addAux([0, 0], counter);
-	const fn = (entry: BaseBitmapPair) => addAux(entry, counter);
+	const initial = addAux(bbp(0, 0), counter);
+	const fn = (entry: BBP) => addAux(entry, counter);
 
 	const newClocks = clocks.slice();
 	const idx = newClocks.findIndex(([id0]) => id0 === id);
 	if (idx > -1) {
-		newClocks[idx] = [id, fn(newClocks[idx][1])];
+		newClocks[idx] = bvv(id, fn(newClocks[idx][1]));
 	} else {
-		newClocks.unshift([id, initial]);
+		newClocks.unshift(bvv(id, initial));
 	}
 	return newClocks.sort(([id1], [id2]) => Number(id1 > id2));
 };
 
 // Adds a dot to a BVV entry, returning the normalized entry.
 export const addAux = (
-	[base, bitmap]: BaseBitmapPair,
+	[base, bitmap]: BBP,
 	count: number,
-): BaseBitmapPair => (
+): BBP => (
 	(base < count)
-		? norm([base, bitmap | (1 << (count - base - 1))])
-		: norm([base, bitmap])
+		? norm(bbp(base, bitmap | (1 << (count - base - 1))))
+		: norm(bbp(base, bitmap))
 );
 
 // Merges all entries from the two BVVs.
+type BVVMap = {
+	[key: string]: BBP
+};
 export const merge = (bvvList1: BVV[], bvvList2: BVV[]): BVV[] => (
-	normBvv(Object.entries(([...bvvList1, ...bvvList2]).reduce((acc, [id, bvv]) => {
-		acc[id] = acc[id] ? joinAux(acc[id], bvv) : bvv;
-		return acc;
-	}, {})))
+	normBvv(Object.entries(
+		[...bvvList1, ...bvvList2].reduce((acc: BVVMap, [id, bvv]) => {
+			acc[id] = acc[id] ? joinAux(acc[id], bvv) : bvv as BBP;
+			return acc;
+		}, {} as BVVMap)
+	).map(([id, someBbp]) => bvv(id, someBbp)))
 );
 
 // Joins entries from BVV2 that are also IDs in BVV1, into BVV1.
@@ -143,19 +147,19 @@ export const join = (bvvList1: BVV[], bvvList2: BVV[]): BVV[] => {
 // Returns a (normalized) entry that results from the union of dots from
 // two other entries. Auxiliary function used by join/2.
 export const joinAux = (
-	[count1, bitmap1]: BaseBitmapPair,
-	[count2, bitmap2]: BaseBitmapPair,
-): BaseBitmapPair => (
+	[count1, bitmap1]: BBP,
+	[count2, bitmap2]: BBP,
+): BBP => (
 	(count1 >= count2)
-		? [count1, bitmap1 | (bitmap2 >> (count1 - count2))]
-		: [count2, bitmap2 | (bitmap1 >> (count2 - count1))]
+		? bbp(count1, bitmap1 | (bitmap2 >> (count1 - count2)))
+		: bbp(count2, bitmap2 | (bitmap1 >> (count2 - count1)))
 );
 
 // Takes and returns a BVV where in each entry, the bitmap is reset to zero.
-export const base = (bvv: BVV[]): BVV[] => (
+export const base = (someBvv: BVV[]): BVV[] => (
 	// normalize all entries
 	// remove all non-contiguous counters w.r.t the base
-	normBvv(bvv).map(([baseCounter, [counter]]) => ([baseCounter, [counter, 0]]))
+	normBvv(someBvv).map(([id, [counter]]: BVV) => (bvv(id, bbp(counter, 0))))
 );
 
 // Takes a BVV at node Id and returns a pair with sequence number for a new
@@ -169,23 +173,23 @@ export const event = (bvv: BVV[], id: string): [number, BVV[]] => {
 	// since nodes call event with their id, their entry always matches [N, 0]
 	const count = match ? match[1][0] + 1 : 1;
 	// return the new counter and the updated BVV
-	return [count, add(bvv, [id, count])];
+	return [count, add(bvv, d(id, count))];
 };
 
 // Stores an Id-Entry pair in a BVV; if the id already exists, the 
 // associated entry is replaced by the new one.
 export const storeEntry = (
 	id: string,
-	[base]: BaseBitmapPair,
-	bvv: BVV[],
+	[base]: BBP,
+	bvvA: BVV[],
 ): BVV[] => {
-	if (base === 0) return bvv;
-	const match = bvv.find(([id0]) => id0 === id);
+	if (base === 0) return bvvA;
+	const match = bvvA.find(([id0]) => id0 === id);
 	if (match) {
 		const [,[base2]] = match;
 		return base2 < base
-			? bvv.map((entry) => entry[0] === id ? [id, [base, 0]] : entry)
-			: bvv;
+			? bvvA.map((entry) => entry[0] === id ? bvv(id, bbp(base, 0)) : entry)
+			: bvvA;
 	}
-	return bvv.concat([[id, [base, 0]]]);
+	return bvvA.concat([bvv(id, bbp(base, 0))]);
 };
