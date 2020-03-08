@@ -1,5 +1,15 @@
-import { d, dvp, dcc, Dot, DCC, DVP, BVV, prim } from './swc-types';
-import { storeByDot } from './erlang-helpers';
+import {
+	d,
+	olt,
+	dvp,
+	dcc,
+	Dot,
+	DCC,
+	DVP,
+	BVV,
+	prim,
+	OLByString,
+} from './swc-types';
 import * as swcVv from './swc-vv';
 import * as swcNode from './swc-node';
 
@@ -10,7 +20,7 @@ export const values = ([values]: DCC): prim[] => (
 
 // Returns the causal context of a DCC, which is representable as a 
 // Version Vector.
-export const context = ([, dots]: DCC): Dot[] => dots;
+export const context = ([, dots]: DCC): OLByString<Dot> => dots;
 
 // Performs the synchronization of two DCCs; it discards versions (
 // {dot,value} pairs) made obsolete by the other DCC, by preserving the
@@ -24,23 +34,23 @@ export const sync = (
 ): DCC => {
 	// if two versions have the same dot, they must have the same value also.
 	// merge the two DCC's.
-	const merged: DVP[] = Object.values([...dvp1, ...dvp2].reduce((acc, [dot, val]) => {
+	const merged = Object.values([...dvp1, ...dvp2].reduce((acc, [dot, val]) => {
 		acc[dot.join()] = dvp(dot, val);
 		return acc;
-	}, {}));
+	}, {})) as OLByString<DVP>;
 
 	// filter the outdated versions
-	const current = merged.filter(([[id, counter]]) => (
+	const current = merged.delete(([[id, counter]]) => (
 		counter > Math.min(swcVv.get(id, dots1), swcVv.get(id, dots2))
 	));
 	// calculate versions that are in both DCC's
 	const dvp1Dots = dvp1.map(([dot]) => dot);
 
-	const filtered = dvp2.filter(([dot1]) => dvp1Dots.some((dot2) => (
+	const filtered = dvp2.delete(([dot1]) => dvp1Dots.some((dot2) => (
 		dot1.join() === dot2.join()
 	)));
 	// add these versions to the filtered list of versions
-	const dvps = [...current, ...filtered];
+	const dvps = olt(...current, ...filtered);
 	// return the new list of version and the merged VVs
 	return dcc(dvps, swcVv.join(dots1, dots2));
 };
@@ -66,7 +76,7 @@ export const addDCC = (
 	dot: Dot,
 	value: string,
 ): DCC => dcc(
-	storeByDot(dot, value, someDvp),
+	someDvp.store(dvp(dot, value)),
 	swcVv.add(dccDot, dot),
 );
 
@@ -74,9 +84,9 @@ export const addDCC = (
 // context (a version vector) C, and also merges C into DCC causal context V.
 export const discard = (
 	[dvps, ccDots]: DCC,
-	dot: Dot[],
+	dot: OLByString<Dot>,
 ): DCC => dcc(
-	dvps.filter(([[id, count]]) => count > swcVv.get(id, dot)),
+	dvps.delete(([[id, count]]) => count > swcVv.get(id, dot)),
 	swcVv.join(ccDots, dot),
 );
 
@@ -87,17 +97,17 @@ export const discard = (
 // node clock BVV.
 export const strip = (
 	[someDvp, dots]: DCC,
-	someBvv: BVV[],
+	someBvv: OLByString<BVV>,
 ): DCC => dcc(
 	someDvp,
-	dots.filter(([id, n]: Dot) => Number(n > swcNode.get(id, someBvv)[0])),
+	dots.delete(([id, n]: Dot) => n > swcNode.get(id, someBvv)[0]),
 );
 
 // Function fill/2 adds back causality information to a stripped DCC, before
 // any operation is performed.
 export const fill2 = (
 	[someDvp, dots]: DCC,
-	someBvv: BVV[],
+	someBvv: OLByString<BVV>,
 ): DCC => dcc(
 	someDvp,
 	someBvv.reduce((acc, [id]: BVV) => {
@@ -110,7 +120,7 @@ export const fill2 = (
 // instead of adding all entries in the BVV.
 export const fill3 = (
 	[someDvp, dots]: DCC,
-	someBvv: BVV[],
+	someBvv: OLByString<BVV>,
 	ids: string[],
 ): DCC => {
 	// only consider ids that belong to both the list of ids received and the BVV

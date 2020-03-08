@@ -1,54 +1,66 @@
-import { d, dvp, bvv, bbp, DCC } from '../swc-types';
+import {
+    d,
+    ol,
+    dvp,
+    dcc,
+    bvv,
+    bbp,
+    Dot,
+    DCC,
+    BVV,
+    DVP,
+} from '../swc-types';
 import * as swc from '../swc-kv';
 
-const d1 = (): DCC => ([
-    [
+
+const d1 = (): DCC => dcc(
+    ol<DVP>(
         dvp(d("a", 8), "red"),
         dvp(d("b", 2), "green"),
-    ],
-    [],
-]);
-const d2 = (): DCC => ([
-    [],
-    [
+    ),
+    ol<Dot>(),
+);
+const d2 = (): DCC => dcc(
+    ol<DVP>(),
+    ol<Dot>(
         d("a", 4),
         d("b", 20),
-    ],
-]);
-const d3 = (): DCC => ([
-    [
+    ),
+);
+const d3 = (): DCC => dcc(
+    ol<DVP>(
         dvp(d("a", 1), "black"),
         dvp(d("a", 3), "red"),
         dvp(d("b", 1), "green"),
         dvp(d("b", 2), "green"),
-    ],
-    [
+    ),
+    ol<Dot>(
         d("a", 4),
         d("b", 7),
-    ],
-]);
-const d4 = (): DCC => ([
-    [
+    ),
+);
+const d4 = (): DCC => dcc(
+    ol<DVP>(
         dvp(d("a", 2), "gray"),
         dvp(d("a", 3), "red"),
         dvp(d("a", 5), "red"),
         dvp(d("b", 2), "green"),
-    ],
-    [
+    ),
+    ol<Dot>(
         d("a", 5),
         d("b", 5),
-    ],
-]);
-const d5 = (): DCC => ([
-    [
+    ),
+);
+const d5 = (): DCC => dcc(
+    ol<DVP>(
         dvp(d("a", 5), "gray"),
-    ],
-    [
+    ),
+    ol<Dot>(
         d("a", 5),
         d("b", 5),
         d("c", 4),
-    ],
-]);
+    ),
+);
 
 
 describe('SWC KV', () => {
@@ -91,12 +103,12 @@ describe('SWC KV', () => {
     });
 
     it('discard', () => {
-        expect(swc.discard(d3(), [])).toEqual(d3());
-        expect(swc.discard(d3(), [
+        expect(swc.discard(d3(), ol<Dot>())).toEqual(d3());
+        expect(swc.discard(d3(), ol<Dot>(
             d("a", 2),
             d("b", 15),
             d("c", 15),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 3), "red")
             ],
@@ -106,11 +118,11 @@ describe('SWC KV', () => {
                 d("c", 15),
             ],
         ]);
-        expect(swc.discard(d3(), [
+        expect(swc.discard(d3(), ol<Dot>(
             d("a", 3),
             d("b", 15),
             d("c", 15),
-        ])).toEqual([
+        ))).toEqual([
             [],
             [
                 d("a", 4),
@@ -121,13 +133,13 @@ describe('SWC KV', () => {
     });
 
     it('strip', () => {
-        expect(swc.strip(d5(), [
+        expect(swc.strip(d5(), ol<BVV>(
             bvv("a", bbp(4, 4)),
-        ])).toEqual(d5());
+        ))).toEqual(d5());
 
-        expect(swc.strip(d5(), [
+        expect(swc.strip(d5(), ol<BVV>(
             bvv("a", bbp(5, 0)),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -137,9 +149,9 @@ describe('SWC KV', () => {
             ],
         ]);
 
-        expect(swc.strip(d5(), [
+        expect(swc.strip(d5(), ol<BVV>(
             bvv("a", bbp(15, 0)),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -148,10 +160,10 @@ describe('SWC KV', () => {
                 d("c", 4),
             ],
         ]);
-        expect(swc.strip(d5(), [
+        expect(swc.strip(d5(), ol<BVV>(
             bvv("a", bbp(15, 4)),
             bvv("b", bbp(1, 2)),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -160,10 +172,10 @@ describe('SWC KV', () => {
                 d("c", 4),
             ],
         ]);
-        expect(swc.strip(d5(), [
+        expect(swc.strip(d5(), ol<BVV>(
             bvv("b", bbp(15, 4)),
             bvv("c", bbp(1, 2)),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -172,11 +184,11 @@ describe('SWC KV', () => {
                 d("c", 4),
             ],
         ]);
-        expect(swc.strip(d5(), [
+        expect(swc.strip(d5(), ol<BVV>(
             bvv("a", bbp(15, 4)),
             bvv("b", bbp(15, 4)),
             bvv("c", bbp(5, 2)),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -185,9 +197,9 @@ describe('SWC KV', () => {
     });
 
     it('fill2', () => {
-        expect(swc.fill2(d5(), [bvv("a", bbp(4, 4))])).toEqual(d5());
-        expect(swc.fill2(d5(), [bvv("a", bbp(5, 0))])).toEqual(d5());
-        expect(swc.fill2(d5(), [bvv("a", bbp(6, 0))])).toEqual([
+        expect(swc.fill2(d5(), ol<BVV>(bvv("a", bbp(4, 4))))).toEqual(d5());
+        expect(swc.fill2(d5(), ol<BVV>(bvv("a", bbp(5, 0))))).toEqual(d5());
+        expect(swc.fill2(d5(), ol<BVV>(bvv("a", bbp(6, 0))))).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -197,9 +209,9 @@ describe('SWC KV', () => {
                 d("c", 4),
             ]
         ]);
-        expect(swc.fill2(d5(), [
+        expect(swc.fill2(d5(), ol<BVV>(
             bvv("a", bbp(15, 12)),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -209,9 +221,9 @@ describe('SWC KV', () => {
                 d("c", 4),
             ]
         ]);
-        expect(swc.fill2(d5(), [
+        expect(swc.fill2(d5(), ol<BVV>(
             bvv("b", bbp(15, 12)),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -221,9 +233,9 @@ describe('SWC KV', () => {
                 d("c", 4),
             ]
         ]);
-        expect(swc.fill2(d5(), [
+        expect(swc.fill2(d5(), ol<BVV>(
             bvv("d", bbp(15, 12)),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -234,10 +246,10 @@ describe('SWC KV', () => {
                 d("d", 15),
             ]
         ]);
-        expect(swc.fill2(d5(), [
+        expect(swc.fill2(d5(), ol<BVV>(
             bvv("a", bbp(9, 6)),
             bvv("d", bbp(15, 12)),
-        ])).toEqual([
+        ))).toEqual([
             [
                 dvp(d("a", 5),"gray"),
             ],
@@ -251,10 +263,10 @@ describe('SWC KV', () => {
     });
 
     it('fill3', () => {
-        expect(swc.fill3(d5(), [
+        expect(swc.fill3(d5(), ol<BVV>(
             bvv("a", bbp(9, 6)),
             bvv("d", bbp(15, 12)),
-        ], ["a"])).toEqual([
+        ), ["a"])).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -264,10 +276,10 @@ describe('SWC KV', () => {
                 d("c", 4),
             ]
         ]);
-        expect(swc.fill3(d5(), [
+        expect(swc.fill3(d5(), ol<BVV>(
             bvv("a", bbp(9, 6)),
             bvv("d", bbp(15, 12)),
-        ], ["b","a"])).toEqual([
+        ), ["b","a"])).toEqual([
             [
                 dvp(d("a", 5), "gray")
             ],
@@ -277,10 +289,10 @@ describe('SWC KV', () => {
                 d("c", 4),
             ]
         ]);
-        expect(swc.fill3(d5(), [
+        expect(swc.fill3(d5(), ol<BVV>(
             bvv("a", bbp(9, 6)),
             bvv("d", bbp(15, 12)),
-        ], ["d","a"])).toEqual([
+        ), ["d","a"])).toEqual([
             [
                 dvp(d("a", 5), "gray"),
             ],
@@ -291,14 +303,14 @@ describe('SWC KV', () => {
                 d("d", 15),
             ]
         ]);
-        expect(swc.fill3(d5(), [
+        expect(swc.fill3(d5(), ol<BVV>(
             bvv("a", bbp(9, 6)),
             bvv("d", bbp(15, 12)),
-        ], ["b"])).toEqual(d5());
-        expect(swc.fill3(d5(), [
+        ), ["b"])).toEqual(d5());
+        expect(swc.fill3(d5(), ol<BVV>(
             bvv("a", bbp(9, 6)),
             bvv("d", bbp(15, 12)),
-        ], ["f"])).toEqual(d5());
+        ), ["f"])).toEqual(d5());
     });
 
     it('add DCC', () => {

@@ -1,13 +1,22 @@
-import { bbp, bvv, d, Dot, BBP, BVV } from './swc-types';
+import {
+	d,
+	ol,
+	bbp,
+	bvv,
+	Dot,
+	BVV,
+	BBP,
+	OLByString,
+} from './swc-types';
 
 
 // Returns the entry of a BVV associated with a given ID.
 export const get = (
-	someBbp: string,
-	someBvv: BVV[],
+	bbpA: string,
+	bvvA: OLByString<BVV>,
 ): BBP => {
-	const match = someBvv.find(([id]) => id === someBbp);
-	return match ? match[1] : [0, 0];
+	const match = bvvA.find(([id]) => id === bbpA);
+	return match ? match[1] : bbp(0, 0);
 };
 
 // Normalizes an entry pair, by removing dots and adding them to the base
@@ -19,21 +28,20 @@ export const norm = (
 );
 
 // Normalizes all entries in the BVV, using norm.
-export const normBvv = (bvvA: BVV[]): BVV[] => (
-	bvvA
+export const normBvv = (
+	bvvA: OLByString<BVV>,
+): OLByString<BVV> => (
 	// normalize all entries
-	.map(([key, bvvB]): BVV => (bvv(key, norm(bvvB))))
+	ol<BVV>(...bvvA.map(([key, bvvB]): BVV => bvv(key, norm(bvvB))))
 	// remove `[0,0]` entries
-	.filter(([, bvvC]) => bvvC.join(',') !== '0,0')
-	// sort by node ID's
-	.sort(([id1], [id2]) => Number(id1 > id2))
+	.delete(([, bvvC]) => bvvC.join(',') !== '0,0')
 );
 
 // Returns the dots in the first clock that are missing from the second
 // clock, but only from entries in the list of ids received as argument.
 export const missingDots = (
-	nc1: BVV[],
-	nc2: BVV[],
+	nc1: OLByString<BVV>,
+	nc2: OLByString<BVV>,
 	ids: string[],
 ): BVV[] => (
 	nc1.length < 1 ? [] : nc1.reduce((acc, [id, bvvA]) => {
@@ -49,7 +57,7 @@ export const missingDots = (
 		} else {
 			return acc;
 		}
-	}, []).sort(([id1], [id2]) => Number(id1 > id2))
+	}, [])
 );
 
 export const subtractDots = (
