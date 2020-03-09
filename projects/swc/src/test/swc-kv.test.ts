@@ -1,6 +1,7 @@
 import {
     d,
     ol,
+    olt,
     dvp,
     dcc,
     bvv,
@@ -14,21 +15,21 @@ import * as swc from '../swc-kv';
 
 
 const d1 = (): DCC => dcc(
-    ol<DVP>(
+    olt<DVP>(
         dvp(d("a", 8), "red"),
         dvp(d("b", 2), "green"),
     ),
     ol<Dot>(),
 );
 const d2 = (): DCC => dcc(
-    ol<DVP>(),
+    olt<DVP>(),
     ol<Dot>(
         d("a", 4),
         d("b", 20),
     ),
 );
 const d3 = (): DCC => dcc(
-    ol<DVP>(
+    olt<DVP>(
         dvp(d("a", 1), "black"),
         dvp(d("a", 3), "red"),
         dvp(d("b", 1), "green"),
@@ -40,7 +41,7 @@ const d3 = (): DCC => dcc(
     ),
 );
 const d4 = (): DCC => dcc(
-    ol<DVP>(
+    olt<DVP>(
         dvp(d("a", 2), "gray"),
         dvp(d("a", 3), "red"),
         dvp(d("a", 5), "red"),
@@ -52,7 +53,7 @@ const d4 = (): DCC => dcc(
     ),
 );
 const d5 = (): DCC => dcc(
-    ol<DVP>(
+    olt<DVP>(
         dvp(d("a", 5), "gray"),
     ),
     ol<Dot>(
@@ -95,7 +96,7 @@ describe('SWC KV', () => {
     });
 
     it('add BVV', () => {
-        expect(swc.addBVV([bvv("a", bbp(5, 3))], d1()))
+        expect(swc.addBVV(ol<BVV>(bvv("a", bbp(5, 3))), d1()))
         .toEqual([
             bvv("a", bbp(8, 0)),
             bvv("b", bbp(0, 2)),

@@ -104,9 +104,9 @@ const valuesAux = (
 
 // Adds a dot (ID, Counter) to a BVV.
 export const add = (
-	clocks: BVV[],
+	clocks: OLByString<BVV>,
 	[id, counter]: Dot,
-): BVV[] => {
+): OLByString<BVV> => {
 	const initial = addAux(bbp(0, 0), counter);
 	const fn = (entry: BBP) => addAux(entry, counter);
 
@@ -117,7 +117,7 @@ export const add = (
 	} else {
 		newClocks.unshift(bvv(id, initial));
 	}
-	return newClocks.sort(([id1], [id2]) => Number(id1 > id2));
+	return ol<BVV>(...newClocks.sort(([id1], [id2]) => Number(id1 > id2)));
 };
 
 // Adds a dot to a BVV entry, returning the normalized entry.
@@ -131,23 +131,15 @@ export const addAux = (
 );
 
 // Merges all entries from the two BVVs.
-type BVVMap = {
-	[key: string]: BBP
-};
-export const merge = (bvvList1: BVV[], bvvList2: BVV[]): BVV[] => (
-	normBvv(Object.entries(
-		[...bvvList1, ...bvvList2].reduce((acc: BVVMap, [id, bvv]) => {
-			acc[id] = acc[id] ? joinAux(acc[id], bvv) : bvv as BBP;
-			return acc;
-		}, {} as BVVMap)
-	).map(([id, someBbp]) => bvv(id, someBbp)))
+export const merge = (bvv1: OLByString<BVV>, bvv2: OLByString<BVV>): OLByString<BVV> => (
+	normBvv(bvv1.merge(bvv2, (a: BVV, b: BVV) => joinAux(a[1], b[1])))
 );
 
 // Joins entries from BVV2 that are also IDs in BVV1, into BVV1.
-export const join = (bvvList1: BVV[], bvvList2: BVV[]): BVV[] => {
+export const join = (bvvList1: OLByString<BVV>, bvvList2: OLByString<BVV>): OLByString<BVV> => {
 	// filter keys from bvvList2 that are not in bvvList1
 	const bvvList1Keys = bvvList1.map(([id]) => id);
-	const bvvList2b = bvvList2.filter(([id]) => bvvList1Keys.includes(id));
+	const bvvList2b = bvvList2.delete(([id]) => !bvvList1Keys.includes(id));
 	// merge bvvList1 with filtered bvvList2b
 	return merge(bvvList1, bvvList2b);
 };
@@ -164,10 +156,10 @@ export const joinAux = (
 );
 
 // Takes and returns a BVV where in each entry, the bitmap is reset to zero.
-export const base = (someBvv: BVV[]): BVV[] => (
+export const base = (someBvv: OLByString<BVV>): OLByString<BVV> => (
 	// normalize all entries
 	// remove all non-contiguous counters w.r.t the base
-	normBvv(someBvv).map(([id, [counter]]: BVV) => (bvv(id, bbp(counter, 0))))
+	ol<BVV>(...normBvv(someBvv).map(([id, [counter]]) => bvv(id, bbp(counter, 0))))
 );
 
 // Takes a BVV at node Id and returns a pair with sequence number for a new
@@ -175,7 +167,10 @@ export const base = (someBvv: BVV[]): BVV[] => (
 // function makes use of the invariant that the node BVV for node Id knows all
 // events generated at Id, i.e., the first component of the pair denotes the
 // last event, and the second component, the bitmap, is always zero.
-export const event = (bvv: BVV[], id: string): [number, BVV[]] => {
+export const event = (
+	bvv: OLByString<BVV>,
+	id: string,
+): [number, OLByString<BVV>] => {
 	// find the next counter for id
 	const match = bvv.find(([id0]) => id0 === id);
 	// since nodes call event with their id, their entry always matches [N, 0]

@@ -217,7 +217,7 @@ describe('SWC Watermark', () => {
 		expect(swc.leftJoin(C, B)).toEqual(C);
 	});
 
-	it.only('add peer', () => {
+	it('add peer', () => {
 		expect(swc.addPeer(swc.addPeer(M, "z", ["b", "a"]), "l", ["z", "y"]))
 		.toEqual(swc.addPeer(swc.addPeer(M, "l", ["y", "z"]), "z", ["a", "b"]));
 

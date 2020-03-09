@@ -1,11 +1,12 @@
 import {
     d,
     vv,
+    ol,
+    olt,
     dvp,
     bbp,
     vvm,
     dcc,
-    ol,
     Dot,
     VV,
     DVP,
@@ -51,7 +52,7 @@ describe("types", () => {
     });
     it("dcc", () => {
         expect(dcc(
-            ol<DVP>(
+            olt<DVP>(
                 dvp(d("a", 4), "value1"),
                 dvp(d("h", 5), "value2"),
             ),

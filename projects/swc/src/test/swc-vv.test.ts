@@ -1,5 +1,5 @@
 import * as swc from '../swc-vv';
-import { d, Dot, ol } from '../swc-types';
+import { d, ol, Dot } from '../swc-types';
 
 describe('SWC VV', () => {
 	it.only('add', () => {

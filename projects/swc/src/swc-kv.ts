@@ -8,6 +8,7 @@ import {
 	DVP,
 	BVV,
 	prim,
+	OLByTuple,
 	OLByString,
 } from './swc-types';
 import * as swcVv from './swc-vv';
@@ -37,7 +38,7 @@ export const sync = (
 	const merged = Object.values([...dvp1, ...dvp2].reduce((acc, [dot, val]) => {
 		acc[dot.join()] = dvp(dot, val);
 		return acc;
-	}, {})) as OLByString<DVP>;
+	}, {})) as OLByTuple<DVP>;
 
 	// filter the outdated versions
 	const current = merged.delete(([[id, counter]]) => (
@@ -60,9 +61,9 @@ export const sync = (
 // the function swc_node:add/2 defined over BVV and dots, the BVV, and the list of
 // dots in the DCC.
 export const addBVV = (
-	someBvv: BVV[],
+	someBvv: OLByString<BVV>,
 	[versions]: DCC,
-): BVV[] => {
+): OLByString<BVV> => {
 	const dots = versions.map(([k]) => k);
 	return dots.reduce((acc, item) => swcNode.add(acc, item), someBvv);
 };

@@ -76,8 +76,8 @@ export const replacePeer = (
 		}
 	};
 	return vvm(
-		new OLByString<VV>(vvL2.map(fn)),
-		new OLByString<VV>(vvR.map(fn)),
+		ol<VV>(...vvL2.map(fn)),
+		ol<VV>(...vvR.map(fn)),
 	);
 };
 
@@ -109,7 +109,7 @@ export const leftJoinAux = (
 	const peers: string[] = vv1.map(([id]) => id);
 
 	// filter entry peers from B that are not in A
-	const vv2b = vv2.filter(([id]) => peers.includes(id));
+	const vv2b = vv2.delete(([id]) => !peers.includes(id));
 
 	const merged: { [k: string]: OLByString<Dot> } = [...vv1, ...vv2b].reduce((acc, [id, vv0]: VV) => {
 		acc[id] = acc[id] ? swcVv.leftJoin(acc[id], vv0) : vv0;
@@ -138,7 +138,7 @@ export const updateCell = (
 		return vv(vv0[0], vv0[1]);
 	}));
 	if (!match) {
-		vvA2.push(vv(entryId, ol<Dot>(newDot)));
+		vvA2[vvA2.length] = vv(entryId, ol<Dot>(newDot));
 	}
 
 	return vvm(vvA2, vvB1);
@@ -177,7 +177,7 @@ export const resetCounters = ([a, b]: VVM): VVM => vvm(
 
 export const deletePeer = ([vva, vvb]: VVM, id: string): VVM => vvm(
 	ol<VV>(...vva
-		.filter(([i]) => i !== id)
+		.delete(([i]) => i === id)
 		.map(([s, ds]) => vv(s, swcVv.deleteKey(ds, id)))
 	),
 	vvb,
