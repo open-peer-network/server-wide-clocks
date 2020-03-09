@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"moduleResolution": "node",
+		"module": "ES6",
+		"target": "es2015",
+		"noImplicitAny": true,
+		"removeComments": false,
+		"preserveConstEnums": true,
+		"sourceMap": true
+	},
+	"include": [
+		"src/*"
+	],
+	"exclude": [
+		"node_modules",
+		"src/test/*"
+	]
+}

@@ -38,7 +38,7 @@ export const sync = (
 	const merged = Object.values([...dvp1, ...dvp2].reduce((acc, [dot, val]) => {
 		acc[dot.join()] = dvp(dot, val);
 		return acc;
-	}, {})) as OLByTuple<DVP>;
+	}, {} as { [k: string]: any })) as OLByTuple<DVP>;
 
 	// filter the outdated versions
 	const current = merged.delete(([[id, counter]]) => (

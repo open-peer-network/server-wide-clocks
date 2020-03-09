@@ -58,7 +58,7 @@ describe('SWC Watermark', () => {
 	it('update', () => {
 		expect(M1).toEqual([
 			[
-				["a", ol<Dot>(d("b", 4))],
+				["a", [["b", 4]]],
 			],
 			[
 			],
