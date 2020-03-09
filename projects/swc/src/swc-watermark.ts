@@ -114,7 +114,7 @@ export const leftJoinAux = (
 	const merged: { [k: string]: OLByString<Dot> } = [...vv1, ...vv2b].reduce((acc, [id, vv0]: VV) => {
 		acc[id] = acc[id] ? swcVv.leftJoin(acc[id], vv0) : vv0;
 		return acc;
-	}, {});
+	}, {} as { [k: string]: any });
 
 	return ol(
 		...Object.entries(merged).map(([id, dots]) => vv(id, dots))
