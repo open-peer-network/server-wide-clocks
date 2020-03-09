@@ -26,8 +26,9 @@ export const get = (id: string, vv: Dot[]): number => {
 export const join = (
 	a: OLByString<Dot>,
 	b: OLByString<Dot>,
-): OLByString<Dot> => a.merge(b, (a: Dot, b: Dot) => (
-	d(a[0], Math.max(a[1], b[1])))
+): OLByString<Dot> => a.merge<Dot>(
+	b,
+	(a: Dot, b: Dot) => d(a[0], Math.max(a[1], b[1])),
 );
 
 // Left joins two VVs, taking the maximum counter if an entry is

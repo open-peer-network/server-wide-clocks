@@ -2,7 +2,7 @@ import * as swc from '../swc-vv';
 import { d, ol, Dot } from '../swc-types';
 
 describe('SWC VV', () => {
-	it.only('add', () => {
+	it('add', () => {
 		expect(swc.add(ol<Dot>(), d("b", 2))).toEqual(ol<Dot>(d("b", 2)));
 		expect(swc.add(ol<Dot>(d("a", 5), d("b", 1)), d("b", 2))).toEqual(ol<Dot>(d("a", 5), d("b", 2)));
 		expect(swc.add(ol<Dot>(d("a", 5), d("b", 1)), d("a", 2))).toEqual(ol<Dot>(d("a", 5), d("b", 1)));
@@ -40,17 +40,17 @@ describe('SWC VV', () => {
 		expect(swc.deleteKey(A1, "a")).toEqual(ol<Dot>(d("b", 4), d("c", 4)));
 	});
 
-	it('join', () => {
+	it.only('join', () => {
 		const a0 = ol<Dot>(d("a", 4));
 		const a1 = ol<Dot>(d("a", 2), d("b", 4), d("c", 4));
 		const a2 = ol<Dot>(d("a", 1), d("z", 10));
 		const a3 = ol<Dot>(d("a", 1));
 
 		expect(swc.join(a0, a1)).toEqual(ol<Dot>(d("a", 4), d("b", 4), d("c", 4)));
-		expect(swc.leftJoin(a0, a1)).toEqual(a0);
-		expect(swc.leftJoin(a0, a2)).toEqual(a0);
+		// expect(swc.leftJoin(a0, a1)).toEqual(a0);
+		// expect(swc.leftJoin(a0, a2)).toEqual(a0);
 
 		expect(swc.join(a3, a1)).toEqual(ol<Dot>(d("a", 2), d("b", 4), d("c", 4)));
-		expect(swc.leftJoin(a3, a1)).toEqual(ol<Dot>(d("a", 2)));
+		// expect(swc.leftJoin(a3, a1)).toEqual(ol<Dot>(d("a", 2)));
 	});
 });

@@ -2,6 +2,10 @@ const { isArray } = Array;
 
 export type prim = string | number | boolean;
 
+const toOrderedArray = <B>(ob: { [k: string]: B }): B[] => (
+	Object.keys(ob).sort().reduce((ac, key) => ([...ac, ob[key]]), [])
+);
+
 const setType = (thing: any, type: string) => {
 	Object.defineProperty(thing, "tupleType", {
 		value: type,
@@ -164,30 +168,23 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		}, new OLByString<T>())
 	}
 
-	merge(
-		b: OLByString<T>,
-		fn: (a: any, b: any) => any,
-	): OLByString<T> {
-		const a = this.reduce((acc, tuple: T) => {
-			acc[tuple[0]] = tuple[1];
-			return acc;
-		}, {} as { [k: string]: any });
-		b.reduce((acc, tuple: T) => {
-			const id = tuple[0];
-			const val = tuple[1];
-			acc[id] = fn(a[id], val);
-			return acc;
-		}, a);
+	merge<A extends T>(
+		incomingList: OLByString<A>,
+		mergeFn: (a: A, b: A) => A,
+	): OLByString<A> {
+		const sourceMap = this.reduce((ac, t: A) => ({ [t[0]]: t, ...ac }), {} as { [k: string]: A });
 
-		const c = new OLByString<T>();
-		Object.keys(a)
-		.sort((id1, id2) => Number(id1 > id2))
-		.forEach((key) => {
-			const type = this[0] && this[0].tupleType;
-			c[c.length] = setType(a[key], type || "unknown");
-		});
+		const mergedMap = incomingList.reduce((acc, tupleR: A) => {
+			const [id, val] = tupleR;
+			if ([typeof id, typeof val].includes("undefined")) return acc;
 
-		return c;
+			const tupleL = sourceMap[id];
+			acc[id] = isArray(tupleL) ? mergeFn(tupleL, tupleR) : tupleR;
+
+			return acc;
+		}, {} as { [k: string]: A });
+
+		return ol<A>(...toOrderedArray<A>(mergedMap));
 	}
 
 	update(
