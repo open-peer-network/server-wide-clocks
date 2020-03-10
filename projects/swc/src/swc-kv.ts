@@ -4,6 +4,7 @@ import {
 	dvp,
 	dcc,
 	Dot,
+	VV,
 	DCC,
 	DVP,
 	BVV,
@@ -21,7 +22,7 @@ export const values = ([values]: DCC): prim[] => (
 
 // Returns the causal context of a DCC, which is representable as a 
 // Version Vector.
-export const context = ([, dots]: DCC): OLByString<Dot> => dots;
+export const context = ([, dots]: DCC): VV => dots;
 
 // Performs the synchronization of two DCCs; it discards versions (
 // {dot,value} pairs) made obsolete by the other DCC, by preserving the
@@ -85,7 +86,7 @@ export const addDCC = (
 // context (a version vector) C, and also merges C into DCC causal context V.
 export const discard = (
 	[dvps, ccDots]: DCC,
-	dot: OLByString<Dot>,
+	dot: VV,
 ): DCC => dcc(
 	dvps.delete(([[id, count]]) => count > swcVv.get(id, dot)),
 	swcVv.join(ccDots, dot),

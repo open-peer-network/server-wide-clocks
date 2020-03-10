@@ -184,15 +184,15 @@ export const event = (
 export const storeEntry = (
 	id: string,
 	[base]: BBP,
-	bvvA: BVV[],
-): BVV[] => {
+	bvvA: OLByString<BVV>,
+): OLByString<BVV> => {
 	if (base === 0) return bvvA;
 	const match = bvvA.find(([id0]) => id0 === id);
 	if (match) {
 		const [,[base2]] = match;
 		return base2 < base
-			? bvvA.map((entry) => entry[0] === id ? bvv(id, bbp(base, 0)) : entry)
+			? ol<BVV>(...bvvA.map((entry) => entry[0] === id ? bvv(id, bbp(base, 0)) : entry))
 			: bvvA;
 	}
-	return bvvA.concat([bvv(id, bbp(base, 0))]);
+	return bvvA.store(bvv(id, bbp(base, 0)));
 };

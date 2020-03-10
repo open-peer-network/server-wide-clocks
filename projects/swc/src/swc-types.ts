@@ -2,7 +2,11 @@ const { isArray } = Array;
 
 export type prim = string | number | boolean;
 
-const toOrderedArray = <B>(ob: { [k: string]: B }): B[] => (
+export type POJO<T> = {
+	[k: string]: T,
+};
+
+const toOrderedArray = <B>(ob: POJO<B>): B[] => (
 	Object.keys(ob).sort().reduce((ac, key) => ([...ac, ob[key]]), [])
 );
 
@@ -52,7 +56,7 @@ export class OrderedList<T> extends Array<T> {
 	pop(): T {
 		throw new Error(methodMessage);
 	}
-	filter(): T[] {
+	filter(fn: (t: T, i: number, a: OrderedList<T>) => any): T[] {
 		throw new Error(methodMessage);
 	}
 }
@@ -74,6 +78,11 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 			return acc;
 		}, this);
 	}
+
+	filter(fn:(t: T, i: number, a: OLByTuple<T>) => any): OLByTuple<T> {
+		return new OLByTuple(Array.prototype.filter.call(this, fn));
+	}
+
 	delete(
 		fn: (t: T) => boolean,
 	): OLByTuple<T> {
@@ -168,6 +177,10 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		}
 	}
 
+	filter(fn:(t: T, i: number, a: OLByString<T>) => any): OLByString<T> {
+		return new OLByString(Array.prototype.filter.call(this, fn));
+	}
+
 	delete(
 		fn: (t: T) => boolean,
 	): OLByString<T> {
@@ -183,17 +196,19 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		incomingList: OLByString<A>,
 		mergeFn: (a: A, b: A) => A,
 	): OLByString<A> {
-		const sourceMap = this.reduce((ac, t: A) => ({ [t[0]]: t, ...ac }), {} as { [k: string]: A });
+		const sourceMap: POJO<A> = this.reduce((ac, t: A) => ({
+			[t[0]]: t,
+			...ac,
+		}), {} as POJO<A>);
 
 		const mergedMap = incomingList.reduce((acc, tupleR: A) => {
 			const [id, val] = tupleR;
 			if ([typeof id, typeof val].includes("undefined")) return acc;
 
-			const tupleL = sourceMap[id];
-			acc[id] = isArray(tupleL) ? mergeFn(tupleL, tupleR) : tupleR;
+			acc[id] = sourceMap.hasOwnProperty(id) ? mergeFn(acc[id], tupleR) : tupleR;
 
 			return acc;
-		}, {} as { [k: string]: A });
+		}, sourceMap);
 
 		return ol<A>(...toOrderedArray<A>(mergedMap));
 	}
@@ -286,16 +301,21 @@ export const d = (
 	return setType(ob, "Dot");
 };
 
-// VVM = Version Vector Matrix
-export type VV = [string, OLByString<Dot>] & {
-	tupleType?: "VV",
+// VV = Version Vector
+// EVVP = Entry/Version Vector Pair
+export type VV = OLByString<Dot>;
+export type EVVP = [string, OLByString<Dot>] & {
+	tupleType?: "EVVP",
 };
-export const vv = (
+export const vv = (...dots: Dot[]): VV => (
+	ol<Dot>(...dots)
+);
+export const evvp = (
 	a: string,
 	b: OLByString<Dot>,
-): VV => {
+): EVVP => {
 	if (typeof a !== "string" || !isArray(b)) {
-		throw new Error("invalid VV");
+		throw new Error("invalid EVVP");
 	}
 	const ob = [a, b.delete((dot) => (
 		!isArray(dot) ||
@@ -303,7 +323,7 @@ export const vv = (
 		dot.tupleType !== "Dot" ||
 		dot.propertyIsEnumerable("tupleType")
 	))];
-	return setType(ob, "VV");
+	return setType(ob, "EVVP");
 };
 
 // BVV = Bitmapped Version Vector (Node Logical Clock)
@@ -343,12 +363,12 @@ export const bbp = (
 };
 
 // VVM = Version Vector Matrix
-export type VVM = [OLByString<VV>, OLByString<VV>] & {
+export type VVM = [OLByString<EVVP>, OLByString<EVVP>] & {
 	tupleType?: "VVM",
 };
 export const vvm = (
-	vvs1: OLByString<VV>,
-	vvs2: OLByString<VV>,
+	vvs1: OLByString<EVVP>,
+	vvs2: OLByString<EVVP>,
 ): VVM => {
 	const ob = [vvs1, vvs2];
 	return setType(ob, "VVM");

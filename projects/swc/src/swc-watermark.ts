@@ -3,10 +3,11 @@ import {
 	vv,
 	ol,
 	vvm,
-	VV,
+	evvp,
 	BVV,
 	VVM,
 	Dot,
+	EVVP,
 	OLByString,
 } from './swc-types';
 import * as swcNode from './swc-node';
@@ -15,16 +16,16 @@ import * as swcVv from './swc-vv';
 
 
 export const addPeer = (
-	[bvvA, bvvB]: [OLByString<VV>, OLByString<VV>],
+	[bvvA, bvvB]: [OLByString<EVVP>, OLByString<EVVP>],
 	newPeerId: string,
 	itsPeers: string[],
 ): VVM => {
-	const newDots = ol<Dot>(...[newPeerId, ...itsPeers].map((id) => d(id, 0)));
-	// const newDots: Dot[] = itsPeers.reduce((acc, id) => (
-	// 	swcVv.add(acc, d(id, 0))
-	// ), []);
-	return vvm(bvvA.store(vv(newPeerId, newDots)), bvvB);
-	// return vvm(store(vv(newPeerId, newDots), bvvA), bvvB);
+	const newDots = ol<Dot>(...[newPeerId, ...itsPeers].reduce((acc, id) => (
+		swcVv.add(acc, d(id, 0))
+	), ol<Dot>()));
+	// const newDots = ol<Dot>(...[newPeerId, ...itsPeers].map((id) => d(id, 0)));
+
+	return vvm(bvvA.store(evvp(newPeerId, newDots)), bvvB);
 };
 
 export const updatePeer = (
@@ -37,15 +38,15 @@ export const updatePeer = (
 );
 
 const updatePeerAux = (
-	vvA: OLByString<VV>,
+	vvA: OLByString<EVVP>,
 	entryId: string,
 	nodeClock: OLByString<BVV>,
-): OLByString<VV> => new OLByString<VV>(vvA.map(([id, dots]: VV) => {
+): OLByString<EVVP> => new OLByString<EVVP>(vvA.map(([id, dots]: EVVP) => {
 	if (dots.some(([dotId]) => dotId === entryId)) {
 		const [base] = swcNode.get(id, nodeClock);
-		return vv(id, swcVv.add(dots, d(entryId, base)));
+		return evvp(id, swcVv.add(dots, d(entryId, base)));
 	} else {
-		return vv(id, dots);
+		return evvp(id, dots);
 	}
 }));
 
@@ -55,7 +56,7 @@ export const replacePeer = (
 	newId: string,
 ): VVM => {
 	const [vvL, vvR] = vvm1;
-	const found = vvL.find(([id]: VV) => id === oldId);
+	const found = vvL.find(([id]: EVVP) => id === oldId);
 
 	const filteredDots = (dots: OLByString<Dot>): string[] => (
 		dots.map(([id]) => id).filter((id) => id !== oldId)
@@ -65,17 +66,17 @@ export const replacePeer = (
 	);
 	const vvL2 = found ? newVvm(found[1]) : vvL;
 
-	const fn = (vvX: VV): VV => {
+	const fn = (vvX: EVVP): EVVP => {
 		const [id, dots] = vvX;
 		if (dots.some(([idX]) => idX === oldId)) {
-			return vv(id, swcVv.add(swcVv.deleteKey(dots, oldId), d(newId, 0)));
+			return evvp(id, swcVv.add(swcVv.deleteKey(dots, oldId), d(newId, 0)));
 		} else {
 			return vvX;
 		}
 	};
 	return vvm(
-		ol<VV>(...vvL2.map(fn)),
-		ol<VV>(...vvR.map(fn)),
+		ol<EVVP>(...vvL2.map(fn)),
+		ol<EVVP>(...vvR.map(fn)),
 	);
 };
 
@@ -96,27 +97,24 @@ end.
 export const leftJoin = (
 	[a1, a2]: VVM,
 	[b1, b2]: VVM,
-): VVM => {
-	return vvm(leftJoinAux(a1, b1), leftJoinAux(a2, b2));
-};
+): VVM => (
+	vvm(leftJoinAux(a1, b1), leftJoinAux(a2, b2))
+);
 
 export const leftJoinAux = (
-	vv1: OLByString<VV>,
-	vv2: OLByString<VV>,
-): OLByString<VV> => {
-	const peers: string[] = vv1.map(([id]) => id);
-
+	vv1: OLByString<EVVP>,
+	vv2: OLByString<EVVP>,
+): OLByString<EVVP> => {
 	// filter entry peers from B that are not in A
-	const vv2b = vv2.delete(([id]) => !peers.includes(id));
+	const peers: string[] = Array.prototype.map.call(vv1, (id: EVVP) => id[0]);
+	const vv2b = vv2.delete(([id]) => peers.includes(id));
 
-	const merged: { [k: string]: OLByString<Dot> } = [...vv1, ...vv2b].reduce((acc, [id, vv0]: VV) => {
-		acc[id] = acc[id] ? swcVv.leftJoin(acc[id], vv0) : vv0;
-		return acc;
-	}, {} as { [k: string]: any });
-
-	return ol(
-		...Object.entries(merged).map(([id, dots]) => vv(id, dots))
-	);
+	return vv2b.merge(vv1, (vvA, vvB) => {
+		console.log(vvA[1], vvB[1]);
+		const leftJoin = swcVv.leftJoin(vvA[1], vvB[1]);
+		console.log(leftJoin);
+		return evvp(vvA[0], leftJoin);
+	});
 };
 
 export const updateCell = (
@@ -128,15 +126,15 @@ export const updateCell = (
 	const newDot = d(peerId, counter);
 
 	let match = false;
-	const vvA2 = ol<VV>(...vvA1.map((vv0) => {
+	const vvA2 = ol<EVVP>(...vvA1.map((vv0) => {
 		if (vv0[0] === entryId) {
 			match = true;
-			return vv(vv0[0], swcVv.add(vv0[1], newDot));
+			return evvp(vv0[0], swcVv.add(vv0[1], newDot));
 		}
-		return vv(vv0[0], vv0[1]);
+		return evvp(vv0[0], vv0[1]);
 	}));
 	if (!match) {
-		vvA2[vvA2.length] = vv(entryId, ol<Dot>(newDot));
+		vvA2[vvA2.length] = evvp(entryId, vv(newDot));
 	}
 
 	return vvm(vvA2, vvB1);
@@ -150,7 +148,7 @@ export const min = (
 );
 
 export const minAux = (
-	vv1: VV[],
+	vv1: OLByString<EVVP>,
 	id: string,
 ): number => {
 	const vv2 = vv1.find(([id0]) => id0 === id);
@@ -169,14 +167,14 @@ export const get = (
 };
 
 export const resetCounters = ([a, b]: VVM): VVM => vvm(
-	ol<VV>(...a.map(([id, dots]) => vv(id, swcVv.resetCounters(dots)))),
-	ol<VV>(...b.map(([id, dots]) => vv(id, swcVv.resetCounters(dots)))),
+	ol<EVVP>(...a.map(([id, dots]) => evvp(id, swcVv.resetCounters(dots)))),
+	ol<EVVP>(...b.map(([id, dots]) => evvp(id, swcVv.resetCounters(dots)))),
 );
 
 export const deletePeer = ([vva, vvb]: VVM, id: string): VVM => vvm(
-	ol<VV>(...vva
+	ol<EVVP>(...vva
 		.delete(([i]) => i === id)
-		.map(([s, ds]) => vv(s, swcVv.deleteKey(ds, id)))
+		.map(([s, ds]) => evvp(s, swcVv.deleteKey(ds, id)))
 	),
 	vvb,
 );
