@@ -18,10 +18,15 @@ const methodMessage = "restricted method";
 export class OrderedList<T> extends Array<T> {
 	constructor(arr?: T[]) {
 		super();
-		if (arr && arr.length) arr.reduce((acc, next) => {
-			acc[acc.length] = next;
-			return acc;
-		}, this);
+		if (arr && arr.length) {
+			arr.sort((a, b) => isArray(a) && isArray(b)
+				? Number(a.join() > b.join())
+				: 0
+			).reduce((acc, next) => {
+				acc[acc.length] = next;
+				return acc;
+			}, this);
+		}
 	}
 	slice(): any[] {
 		throw new Error(methodMessage);
@@ -150,11 +155,17 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 }
 
 export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
-	constructor(arr?: any[]) {
+	constructor(arr?: T[]) {
 		super();
-		if (arr && arr.length) arr.forEach((tuple) => {
-			this[this.length] = tuple;
-		}, this);
+		if (arr && arr.length) {
+			[...arr].sort((a, b) => isArray(a) && isArray(b)
+				? Number(a.join() > b.join())
+				: 0
+			).reduce((acc, next) => {
+				acc[acc.length] = next;
+				return acc;
+			}, this);
+		}
 	}
 
 	delete(
@@ -236,7 +247,7 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 			l[0] = newTuple;
 			return l;
 		}
-		return this.reduce((acc, curTuple) => {
+		return this.reduce((acc, curTuple, idx) => {
 			const curKey = curTuple[0];
 	
 			if (!done) {
@@ -249,6 +260,11 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 					done = true;
 					acc[acc.length] = newTuple;
 					acc[acc.length] = curTuple;
+					return acc;
+				}
+				if (idx === this.length - 1) {
+					acc[acc.length] = curTuple;
+					acc[acc.length] = newTuple;
 					return acc;
 				}
 			}
@@ -282,10 +298,10 @@ export const vv = (
 		throw new Error("invalid VV");
 	}
 	const ob = [a, b.delete((dot) => (
-		isArray(dot) &&
-		dot.length === 2 &&
-		dot.tupleType === "Dot" &&
-		!dot.propertyIsEnumerable("tupleType")
+		!isArray(dot) ||
+		dot.length !== 2 ||
+		dot.tupleType !== "Dot" ||
+		dot.propertyIsEnumerable("tupleType")
 	))];
 	return setType(ob, "VV");
 };

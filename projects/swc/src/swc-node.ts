@@ -132,7 +132,7 @@ export const addAux = (
 
 // Merges all entries from the two BVVs.
 export const merge = (bvv1: OLByString<BVV>, bvv2: OLByString<BVV>): OLByString<BVV> => (
-	normBvv(bvv1.merge(bvv2, (a: BVV, b: BVV) => joinAux(a[1], b[1])))
+	normBvv(bvv1.merge(bvv2, (a: BVV, b: BVV) => bvv(a[0], joinAux(a[1], b[1]))))
 );
 
 // Joins entries from BVV2 that are also IDs in BVV1, into BVV1.

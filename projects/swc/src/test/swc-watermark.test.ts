@@ -218,9 +218,6 @@ describe('SWC Watermark', () => {
 	});
 
 	it('add peer', () => {
-		expect(swc.addPeer(swc.addPeer(M, "z", ["b", "a"]), "l", ["z", "y"]))
-		.toEqual(swc.addPeer(swc.addPeer(M, "l", ["y", "z"]), "z", ["a", "b"]));
-
 		expect(swc.addPeer(M, "z", ["a", "b"])).toEqual(vvm(
 			ol<VV>(
 				vv("z", ol<Dot>(d("a", 0), d("b", 0), d("z", 0)))
@@ -236,6 +233,29 @@ describe('SWC Watermark', () => {
 			),
 			ol<VV>(),
 		));
+
+		const L = swc.addPeer(M, "z", ["b", "a"]);
+		const R = swc.addPeer(M, "l", ["y", "z"]);
+		expect(L).toEqual(
+			vvm(
+				ol<VV>(
+					vv("z", ol<Dot>(d("a",0), d("b",0), d("z",0))),
+				),
+				ol<VV>(),
+			)
+		);
+		expect(R).toEqual(
+			vvm(
+				ol<VV>(
+					vv("l", ol<Dot>(d("l", 0), d("y", 0), d("z", 0))),
+				),
+				ol<VV>(),
+			)
+		);
+
+		const expected1 = swc.addPeer(L, "l", ["z", "y"]);
+		const expected2 = swc.addPeer(R, "z", ["a", "b"]);
+		expect(expected1).toEqual(expected2);
 	});
 
 	it('min', () => {

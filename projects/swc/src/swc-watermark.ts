@@ -19,14 +19,12 @@ export const addPeer = (
 	newPeerId: string,
 	itsPeers: string[],
 ): VVM => {
-	const newEntry: OLByString<Dot> = [newPeerId, ...itsPeers].reduce((acc, id) => (
-		swcVv.add(acc, d(id, 0))
-	), new OLByString<Dot>());
-	// const newEntry: Dot[] = itsPeers.reduce((acc, id) => (
+	const newDots = ol<Dot>(...[newPeerId, ...itsPeers].map((id) => d(id, 0)));
+	// const newDots: Dot[] = itsPeers.reduce((acc, id) => (
 	// 	swcVv.add(acc, d(id, 0))
 	// ), []);
-	return vvm(bvvA.store(vv(newPeerId, newEntry)), bvvB);
-	// return vvm(store(vv(newPeerId, newEntry), bvvA), bvvB);
+	return vvm(bvvA.store(vv(newPeerId, newDots)), bvvB);
+	// return vvm(store(vv(newPeerId, newDots), bvvA), bvvB);
 };
 
 export const updatePeer = (
