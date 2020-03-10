@@ -19,7 +19,7 @@ describe("types", () => {
     });
     it("vv", () => {
         expect(vv("a", ol<Dot>(d("a", 1)))).toEqual(["a", [["a", 1]]]);
-        expect(vv("b", ol<Dot>(d("b", 2)))).toEqual(["b", [["a", 1],["b",2]]]);
+        expect(vv("b", ol<Dot>(d("b", 2)))).toEqual(["b", [["a", 1], ["b", 2]]]);
     });
     it("vvm", () => {
         expect(vvm(

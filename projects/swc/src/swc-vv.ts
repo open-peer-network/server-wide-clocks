@@ -6,7 +6,7 @@ import {
 } from './swc-types';
 
 // Returns all the keys (ids) from a VV.
-export const vvIds = (vvd: Dot[]): string[] => (
+export const vvIds = (vvd: OLByString<Dot>): string[] => (
 	vvd.map(([id]) => id)
 );
 
@@ -35,7 +35,7 @@ export const join = (
 // present in both VVs, and also taking the entry in A and not in B.
 export const leftJoin = (a: OLByString<Dot>, b: OLByString<Dot>) => {
 	const ids = vvIds(a);
-	return join(a, b.delete(([id]) => ids.includes(id)));
+	return join(a, b.delete(([id]) => !ids.includes(id)));
 };
 
 // Adds an entry {Id, Counter} to the VV, performing the maximum between
