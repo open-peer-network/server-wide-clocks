@@ -2,6 +2,8 @@ const { isArray } = Array;
 
 export type prim = string | number | boolean;
 
+type Tuple = [any, any];
+
 export type POJO<T> = {
 	[k: string]: T,
 };
@@ -19,7 +21,7 @@ const setType = (thing: any, type: string) => {
 };
 
 const methodMessage = "restricted method";
-export class OrderedList<T> extends Array<T> {
+export class OrderedList<T extends Tuple> extends Array<T> {
 	constructor(arr?: T[]) {
 		super();
 		if (arr && arr.length) {
@@ -56,7 +58,10 @@ export class OrderedList<T> extends Array<T> {
 	pop(): T {
 		throw new Error(methodMessage);
 	}
-	filter(fn: (t: T, i: number, a: OrderedList<T>) => any): T[] {
+	map(_fn: (t: T, i: number, a?: any) => any): any {
+		throw new Error(methodMessage);
+	}
+	filter(_fn: (t?: T, i?: number, a?: any) => any): any {
 		throw new Error(methodMessage);
 	}
 }
@@ -65,7 +70,6 @@ export type StringKeyTuple = [string, any] & {
 	tupleType?: string,
 };
 
-type Tuple = [prim, prim];
 export type TupleKeyTuple = [Tuple, any] & {
 	tupleType?: string,
 };
@@ -79,21 +83,46 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 		}, this);
 	}
 
-	filter(fn:(t: T, i: number, a: OLByTuple<T>) => any): OLByTuple<T> {
-		return new OLByTuple(Array.prototype.filter.call(this, fn));
+	filter(fn:(t?: T, i?: number) => boolean): any {
+		return this.reduce((ac, t: T, i: number) => {
+			if (fn(t, i)) ac[ac.length] = t;
+			return ac;
+		}, new OLByTuple<T>());
 	}
 
-	delete(
-		fn: (t: T) => boolean,
-	): OLByTuple<T> {
-		return Array.prototype.filter.call(this, fn);
+	erase(t: Tuple): OLByTuple<T> {
+		const str = t.join();
+		return this.filter((t) => t[0].join() !== str);
 	}
 
-	update4(
-		newKey: Tuple,
-		defaultTuple: T,
-		fn: (val?: any) => T,
-	): OLByTuple<T> {
+	fetch(key: Tuple): any {
+		const found = this.find((t: T) => t[0].join() === key.join());
+		if (found === undefined) {
+			throw new Error("no such key");
+		}
+		return found[1];
+	}
+
+	merge(incomingList: OLByTuple<T>, mergeFn: (a: T, b: T) => T): OLByTuple<T> {
+		const sourceMap: POJO<T> = this.reduce((ac, t: T) => ({
+			[t.join()]: t,
+			...ac,
+		}), {} as POJO<T>);
+
+		const mergedMap = incomingList.reduce((acc, tupleR: T) => {
+			const [keyTuple, val] = tupleR;
+			const id = keyTuple.join();
+			if ([typeof id, typeof val].includes("undefined")) return acc;
+
+			acc[id] = sourceMap.hasOwnProperty(id) ? mergeFn(acc[id], tupleR) : tupleR;
+
+			return acc;
+		}, sourceMap);
+
+		return olt<T>(...toOrderedArray<T>(mergedMap));
+	}
+
+	update4(newKey: Tuple, defaultTuple: T, fn: (val?: any) => T): OLByTuple<T> {
 		let done = false;
 		const keyText = `${newKey[0]},${newKey[1]}`;
 	
@@ -128,9 +157,7 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 		}, new OLByTuple<T>());
 	}
 
-	store(
-		newTuple: T,
-	): OLByTuple<T> {
+	store(newTuple: T): OLByTuple<T> {
 		let done = false;
 		const tupleKey = newTuple[0];
 		const keyText = `${tupleKey[0]},${tupleKey[1]}`;
@@ -161,6 +188,12 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 			return acc;
 		}, new OLByTuple<T>());
 	}
+
+	map<U>(fn: (t?: T, i?: number) => T, list?: U[] | OrderedList<T>): U[] | OrderedList<T> {
+		const res = list || new OrderedList<T>();
+		this.forEach((t: T, i) => { res[res.length] = fn(t, i); });
+		return res;
+	}
 }
 
 export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
@@ -177,31 +210,32 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		}
 	}
 
-	filter(fn:(t: T, i: number, a: OLByString<T>) => any): OLByString<T> {
-		return new OLByString(Array.prototype.filter.call(this, fn));
+	filter(fn:(t?: T, i?: number) => boolean): any {
+		return this.reduce((ac, t: T, i: number) => {
+			if (fn(t, i)) ac[ac.length] = t;
+			return ac;
+		}, new OLByString<T>());
 	}
 
-	delete(
-		fn: (t: T) => boolean,
-	): OLByString<T> {
-		return this.reduce((acc, next) => {
-			if (fn(next) === false) {
-				acc[acc.length] = next;
-			}
-			return acc;
-		}, new OLByString<T>())
+	erase(k: string): OLByString<T> {
+		return this.filter((t) => t[0] !== k);
 	}
 
-	merge<A extends T>(
-		incomingList: OLByString<A>,
-		mergeFn: (a: A, b: A) => A,
-	): OLByString<A> {
-		const sourceMap: POJO<A> = this.reduce((ac, t: A) => ({
+	fetch(key: string): any {
+		const found = this.find((t: T) => t[0] === key);
+		if (found === undefined) {
+			throw new Error("no such key");
+		}
+		return found[1];
+	}
+
+	merge(incomingList: OLByString<T>, mergeFn: (a: T, b: T) => T): OLByString<T> {
+		const sourceMap: POJO<T> = this.reduce((ac, t: T) => ({
 			[t[0]]: t,
 			...ac,
-		}), {} as POJO<A>);
+		}), {} as POJO<T>);
 
-		const mergedMap = incomingList.reduce((acc, tupleR: A) => {
+		const mergedMap = incomingList.reduce((acc, tupleR: T) => {
 			const [id, val] = tupleR;
 			if ([typeof id, typeof val].includes("undefined")) return acc;
 
@@ -210,14 +244,10 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 			return acc;
 		}, sourceMap);
 
-		return ol<A>(...toOrderedArray<A>(mergedMap));
+		return ol<T>(...toOrderedArray<T>(mergedMap));
 	}
 
-	update4(
-		newKey: string,
-		defaultTuple: T,
-		fn: (val?: any) => T,
-	): OLByString<T> {
+	update4(newKey: string, defaultTuple: T, fn: (val?: any) => T): OLByString<T> {
 		let done = false;
 	
 		if (this.length < 1) {
@@ -251,9 +281,7 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		}, new OLByString<T>());
 	}
 
-	store(
-		newTuple: T,
-	): OLByString<T> {
+	store(newTuple: T): OLByString<T> {
 		let done = false;
 		const newKey = newTuple[0];
 
@@ -288,15 +316,18 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 			return acc;
 		}, new OLByString<T>());
 	}
+
+	map<U>(fn: (t?: T, i?: number) => T, list?: U[] | OrderedList<T>): U[] | OrderedList<T> {
+		const res = list || new OrderedList<T>();
+		this.forEach((t: T, i) => { res[res.length] = fn(t, i); });
+		return res;
+	}
 }
 
 export type Dot = [string, number] & {
 	tupleType?: "Dot",
 };
-export const d = (
-	a: string,
-	b: number,
-): Dot => {
+export const d = (a: string, b: number): Dot => {
 	const ob = (a && typeof b === "number") ? [a, b] : [];
 	return setType(ob, "Dot");
 };
@@ -310,18 +341,15 @@ export type EVVP = [string, OLByString<Dot>] & {
 export const vv = (...dots: Dot[]): VV => (
 	ol<Dot>(...dots)
 );
-export const evvp = (
-	a: string,
-	b: OLByString<Dot>,
-): EVVP => {
+export const evvp = (a: string, b: OLByString<Dot>): EVVP => {
 	if (typeof a !== "string" || !isArray(b)) {
 		throw new Error("invalid EVVP");
 	}
-	const ob = [a, b.delete((dot) => (
-		!isArray(dot) ||
-		dot.length !== 2 ||
-		dot.tupleType !== "Dot" ||
-		dot.propertyIsEnumerable("tupleType")
+	const ob = [a, b.filter((dot: Dot) => (
+		isArray(dot) &&
+		dot.length === 2 &&
+		dot.tupleType === "Dot" &&
+		!dot.propertyIsEnumerable("tupleType")
 	))];
 	return setType(ob, "EVVP");
 };
@@ -330,10 +358,7 @@ export const evvp = (
 export type BVV = [string, BBP] & {
 	tupleType?: "BVV",
 };
-export const bvv = (
-	a: string,
-	b: BBP,
-): BVV => {
+export const bvv = (a: string, b: BBP): BVV => {
 	const ob = [a, b];
 	return setType(ob, "BVV");
 };
@@ -342,10 +367,7 @@ export const bvv = (
 export type DVP = [Dot, prim] & {
 	tupleType?: "DVP",
 };
-export const dvp = (
-	dot: Dot,
-	value: any,
-): DVP => {
+export const dvp = (dot: Dot, value: any): DVP => {
 	const ob = [dot, value];
 	return setType(ob, "DVP");
 };
@@ -354,10 +376,7 @@ export const dvp = (
 export type BBP = [number, number] & {
 	tupleType?: "BBP",
 };
-export const bbp = (
-	base: number,
-	bitmap: number,
-): BBP => {
+export const bbp = (base: number, bitmap: number): BBP => {
 	const ob = [base, bitmap];
 	return setType(ob, "BBP");
 };
@@ -366,10 +385,7 @@ export const bbp = (
 export type VVM = [OLByString<EVVP>, OLByString<EVVP>] & {
 	tupleType?: "VVM",
 };
-export const vvm = (
-	vvs1: OLByString<EVVP>,
-	vvs2: OLByString<EVVP>,
-): VVM => {
+export const vvm = (vvs1: OLByString<EVVP>, vvs2: OLByString<EVVP>): VVM => {
 	const ob = [vvs1, vvs2];
 	return setType(ob, "VVM");
 };
@@ -378,10 +394,7 @@ export const vvm = (
 export type DKM = [string, number[]] & {
 	tupleType?: "DKM",
 };
-export const dkm = (
-	a: string,
-	b: number[],
-): DKM => {
+export const dkm = (a: string, b: number[]): DKM => {
 	const ob = [a, b];
 	return setType(ob, "DKM");
 };
@@ -391,10 +404,7 @@ export const dkm = (
 export type DCC = [OLByTuple<DVP>, OLByString<Dot>] & {
 	tupleType?: "DCC",
 };
-export const dcc = (
-	dvp1: OLByTuple<DVP>,
-	dots: OLByString<Dot>,
-): DCC => {
+export const dcc = (dvp1: OLByTuple<DVP>, dots: OLByString<Dot>): DCC => {
 	const ob = [dvp1, dots];
 	return setType(ob, "DCC");
 };

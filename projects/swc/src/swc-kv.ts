@@ -6,10 +6,9 @@ import {
 	Dot,
 	VV,
 	DCC,
-	DVP,
 	BVV,
 	prim,
-	OLByTuple,
+	OrderedList,
 	OLByString,
 } from './swc-types';
 import * as swcVv from './swc-vv';
@@ -36,19 +35,16 @@ export const sync = (
 ): DCC => {
 	// if two versions have the same dot, they must have the same value also.
 	// merge the two DCC's.
-	const merged = Object.values([...dvp1, ...dvp2].reduce((acc, [dot, val]) => {
-		acc[dot.join()] = dvp(dot, val);
-		return acc;
-	}, {} as { [k: string]: any })) as OLByTuple<DVP>;
+	const merged = dvp1.merge(dvp2, a => a);
 
 	// filter the outdated versions
-	const current = merged.delete(([[id, counter]]) => (
+	const current = merged.erase(([[id, counter]]) => (
 		counter > Math.min(swcVv.get(id, dots1), swcVv.get(id, dots2))
 	));
 	// calculate versions that are in both DCC's
-	const dvp1Dots = dvp1.map(([dot]) => dot);
+	const dvp1Dots = dvp1.map<Dot>(([dot]) => dot);
 
-	const filtered = dvp2.delete(([dot1]) => dvp1Dots.some((dot2) => (
+	const filtered = dvp2.erase(([dot1]) => dvp1Dots.some((dot2) => (
 		dot1.join() === dot2.join()
 	)));
 	// add these versions to the filtered list of versions
@@ -88,7 +84,7 @@ export const discard = (
 	[dvps, ccDots]: DCC,
 	dot: VV,
 ): DCC => dcc(
-	dvps.delete(([[id, count]]) => count > swcVv.get(id, dot)),
+	dvps.erase(([[id, count]]) => count > swcVv.get(id, dot)),
 	swcVv.join(ccDots, dot),
 );
 
@@ -102,7 +98,7 @@ export const strip = (
 	someBvv: OLByString<BVV>,
 ): DCC => dcc(
 	someDvp,
-	dots.delete(([id, n]: Dot) => n > swcNode.get(id, someBvv)[0]),
+	dots.erase(([id, n]: Dot) => n > swcNode.get(id, someBvv)[0]),
 );
 
 // Function fill/2 adds back causality information to a stripped DCC, before
