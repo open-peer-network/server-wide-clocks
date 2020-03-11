@@ -89,7 +89,7 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 		return Array.prototype.filter.call(this, fn);
 	}
 
-	update(
+	update4(
 		newKey: Tuple,
 		defaultTuple: T,
 		fn: (val?: any) => T,
@@ -99,7 +99,7 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 	
 		if (this.length < 1) {
 			const l = new OLByTuple<T>();
-			l[l.length] = defaultTuple;
+			l[0] = defaultTuple;
 			return l;
 		}
 		return this.reduce((acc, curTuple, idx) => {
@@ -213,7 +213,7 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		return ol<A>(...toOrderedArray<A>(mergedMap));
 	}
 
-	update(
+	update4(
 		newKey: string,
 		defaultTuple: T,
 		fn: (val?: any) => T,
@@ -222,7 +222,7 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 	
 		if (this.length < 1) {
 			const l = new OLByString<T>();
-			l[l.length] = defaultTuple;
+			l[0] = defaultTuple;
 			return l;
 		}
 		return this.reduce((acc, curTuple, idx) => {

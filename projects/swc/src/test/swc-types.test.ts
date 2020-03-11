@@ -105,7 +105,33 @@ describe("types", () => {
 		// verify that input is unchanged
 		expect(vv1).toEqual(vv(d("a", 1), d("c", 3)));
 	});
-	it("vv.update", () => {});
+	it("vv.update4", () => {
+		/*
+		A = [{"a", 1}, {"b", 1}].
+		B = [{"a", 1}, {"c", 3}].
+		A2 = orddict:update("b", fun (V) -> V + 2 end, 2, A).
+		B2 = orddict:update("b", fun (V) -> V + 2 end, 2, B).
+
+		A2 == [{"a", 1}, {"b", 3}]. % true
+		B2 == [{"a", 1}, {"b", 2}, {"c", 3}]. % true
+		*/
+		const a = vv(d("a", 1), d("b", 1));
+		const b = vv(d("a", 1), d("c", 3));
+		expect(
+			a.update4("b", d("b", 2), (val) => d("b", val + 2))
+		).toEqual(
+			vv(d("a", 1), d("b", 3))
+		);
+		expect(
+			b.update4("b", d("b", 2), (val) => d("b", val + 2))
+		).toEqual(
+			vv(d("a", 1), d("b", 2), d("c", 3))
+		);
+
+		// verify that input is unchanged
+		expect(a).toEqual(vv(d("a", 1), d("b", 1)));
+		expect(b).toEqual(vv(d("a", 1), d("c", 3)));
+	});
 	it("vv.fold", () => {});
 	it("vv.filter", () => {});
 	it("vv.erase", () => {});
