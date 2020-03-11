@@ -61,7 +61,7 @@ export class OrderedList<T extends Tuple> extends Array<T> {
 	map(_fn: (t: T, i: number, a?: any) => any): any {
 		throw new Error(methodMessage);
 	}
-	filter(_fn: (t?: T, i?: number, a?: any) => any): any {
+	filter(_fn: (t: T, i: number, a?: any) => any): any {
 		throw new Error(methodMessage);
 	}
 }
@@ -83,7 +83,7 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 		}, this);
 	}
 
-	filter(fn:(t?: T, i?: number) => boolean): any {
+	filter(fn: (t: T, i?: number) => boolean): OLByTuple<T> {
 		return this.reduce((ac, t: T, i: number) => {
 			if (fn(t, i)) ac[ac.length] = t;
 			return ac;
@@ -122,7 +122,7 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 		return olt<T>(...toOrderedArray<T>(mergedMap));
 	}
 
-	update4(newKey: Tuple, defaultTuple: T, fn: (val?: any) => T): OLByTuple<T> {
+	update4(newKey: Tuple, defaultTuple: T, fn: (val: T[1]) => T): OLByTuple<T> {
 		let done = false;
 		const keyText = `${newKey[0]},${newKey[1]}`;
 	
@@ -189,8 +189,14 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 		}, new OLByTuple<T>());
 	}
 
-	map<U>(fn: (t?: T, i?: number) => T, list?: U[] | OrderedList<T>): U[] | OrderedList<T> {
-		const res = list || new OrderedList<T>();
+	toArray<U>(fn: (t?: T, i?: number) => U): U[] {
+		const res: U[] = [];
+		this.forEach((t: T, i) => { res[res.length] = fn(t, i); });
+		return res;
+	}
+
+	map(fn: (t?: T, i?: number) => T): OLByTuple<T> {
+		const res = new OLByTuple<T>();
 		this.forEach((t: T, i) => { res[res.length] = fn(t, i); });
 		return res;
 	}
@@ -210,7 +216,7 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		}
 	}
 
-	filter(fn:(t?: T, i?: number) => boolean): any {
+	filter(fn: (t: T, i?: number) => boolean): OLByString<T> {
 		return this.reduce((ac, t: T, i: number) => {
 			if (fn(t, i)) ac[ac.length] = t;
 			return ac;
@@ -247,7 +253,7 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		return ol<T>(...toOrderedArray<T>(mergedMap));
 	}
 
-	update4(newKey: string, defaultTuple: T, fn: (val?: any) => T): OLByString<T> {
+	update4(newKey: string, defaultTuple: T, fn: (val: T[1]) => T): OLByString<T> {
 		let done = false;
 	
 		if (this.length < 1) {
@@ -317,8 +323,14 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		}, new OLByString<T>());
 	}
 
-	map<U>(fn: (t?: T, i?: number) => T, list?: U[] | OrderedList<T>): U[] | OrderedList<T> {
-		const res = list || new OrderedList<T>();
+	toArray<U extends prim>(fn: (t?: T, i?: number) => U): U[] {
+		const res: U[] = [];
+		this.forEach((t: T, i) => { res[res.length] = fn(t, i); });
+		return res;
+	}
+
+	map(fn: (t?: T, i?: number) => T): OLByString<T> {
+		const res = new OLByString<T>();
 		this.forEach((t: T, i) => { res[res.length] = fn(t, i); });
 		return res;
 	}
@@ -364,7 +376,7 @@ export const bvv = (a: string, b: BBP): BVV => {
 };
 
 // DVP = Dot/Value Pair
-export type DVP = [Dot, prim] & {
+export type DVP = [Dot, string] & {
 	tupleType?: "DVP",
 };
 export const dvp = (dot: Dot, value: any): DVP => {

@@ -207,7 +207,9 @@ describe('SWC Watermark', () => {
 		);
 		// console.log(JSON.stringify(AC, null, '\t'));
 		// console.log(JSON.stringify(expectedAC, null, '\t'));
+
 		expect(AC).toEqual(expectedAC);
+
 		// expect(swc.leftJoin(B, A)).toEqual(vvm(
 		// 	ol<EVVP>(
 		// 		evvp("a", vv(d("b", 4), d("c", 10))),

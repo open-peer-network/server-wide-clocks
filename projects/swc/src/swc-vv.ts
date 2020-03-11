@@ -1,6 +1,5 @@
 import {
 	d,
-	ol,
 	Dot,
 	VV,
 } from './swc-types';
@@ -23,10 +22,7 @@ export const get = (id: string, vv: VV): number => {
 
 // Merges or joins two VVs, taking the maximum counter if an entry is
 // present in both VVs.
-export const join = (
-	a: VV,
-	b: VV,
-): VV => a.merge<Dot>(
+export const join = (a: VV, b: VV): VV => a.merge(
 	b,
 	(a: Dot, b: Dot) => d(a[0], Math.max(a[1], b[1])),
 );
@@ -40,11 +36,8 @@ export const leftJoin = (a: VV, b: VV) => {
 
 // Adds an entry {Id, Counter} to the VV, performing the maximum between
 // both counters, if the entry already exists.
-export const add = (
-	dots: VV,
-	[id, counter]: Dot,
-): VV => (
-	dots.update(id, d(id, counter), (oldVal: number): Dot => (
+export const add = (dots: VV, [id, counter]: Dot): VV => (
+	dots.update4(id, d(id, counter), (oldVal: number): Dot => (
 		d(id, Math.max(counter, oldVal))
 	))
 );
@@ -64,22 +57,11 @@ export const minKey = (dots: VV): string => {
 };
 
 // Returns the VV with the same entries, but with counters at zero.
-export const resetCounters = (
-	dots: VV,
-): VV => (
-	ol<Dot>(...dots.map(([str]) => d(str, 0)))
+export const resetCounters = (dots: VV): VV => (
+	dots.map(([str]) => d(str, 0))
 );
 
 // Returns the VV without the entry with a given key.
-export const deleteKey = (
-	dots: VV,
-	id: string,
-): VV => {
-	// const newDots = dots.slice();
-	// const idx = dots.findIndex(([id0]) => id0 === id);
-	// if (idx > -1) {
-	// 	newDots.splice(idx, 1);
-	// }
-	// return newDots;
-	return dots.delete(([id0]) => id0 === id);
-};
+export const deleteKey = (dots: VV, id: string): VV => (
+	dots.erase(id)
+);

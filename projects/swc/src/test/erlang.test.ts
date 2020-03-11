@@ -28,15 +28,25 @@ describe("erlang equivalents", () => {
 	it("orddict:store/3", () => {
 		/*
 		A = [{"a", 1}, {"c", 3}].
-		C = orddict:store("b", 2, A).
+		B = [{"a", 1}, {"b", 2}].
+		R1 = orddict:store("b", 5, A).
+		R2 = orddict:store("b", 5, B).
 
-		C == [{"a", 1}, {"b", 2}, {"c", 3}]. % true
+		R1 == [{"a", 1}, {"b", 5}, {"c", 3}]. % true
+		R2 == [{"a", 1}, {"b", 5}]. % true
 		*/
 		const vv1 = vv(d("a", 1), d("c", 3));
+		const vv2 = vv(d("a", 1), d("b", 2));
 		expect(
-			vv1.store(d("b", 2))
+			vv1.store(d("b", 5))
 		).toEqual(
-			vv(d("a", 1), d("b", 2), d("c", 3))
+			vv(d("a", 1), d("b", 5), d("c", 3))
+        );
+
+		expect(
+			vv2.store(d("b", 5))
+		).toEqual(
+			vv(d("a", 1), d("b", 5))
 		);
 
 		// verify that input is unchanged
@@ -125,11 +135,14 @@ describe("erlang equivalents", () => {
 		B == [{"a", 2}, {"b", 3}]. % true
 		*/
 		const a = vv(d("a", 1), d("b", 2));
-		const b = a.map<Dot>((t) => d(t[0], t[1] + 1));
+		const b = a.map((t) => d(t[0], t[1] + 1));
 		expect(b).toEqual(vv(d("a", 2), d("b", 3)));
 
 		// verify that input is unchanged
 		expect(a).toEqual(vv(d("a", 1), d("b", 2)));
+	});
+	it("orddict:fold/3", () => {
+		// simply use reduce
 	});
 	it("lists:foldl", () => {});
 });

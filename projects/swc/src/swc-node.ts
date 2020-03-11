@@ -34,7 +34,7 @@ export const normBvv = (
 	// normalize all entries
 	ol<BVV>(...bvvA.map(([key, bvvB]): BVV => bvv(key, norm(bvvB))))
 	// remove `[0,0]` entries
-	.delete(([, bvvC]) => bvvC.join(',') !== '0,0')
+	.filter(([, bvvC]) => bvvC.join(',') !== '0,0')
 );
 
 // Returns the dots in the first clock that are missing from the second
@@ -43,7 +43,7 @@ export const missingDots = (
 	nc1: OLByString<BVV>,
 	nc2: OLByString<BVV>,
 	ids: string[],
-): BVV[] => (
+): [string, number[]][] => (
 	nc1.length < 1 ? [] : nc1.reduce((acc, [id, bvvA]) => {
 		if (ids.includes(id)) {
 			const idx = nc2.findIndex(([id0]) => id === id0);
@@ -60,10 +60,7 @@ export const missingDots = (
 	}, [])
 );
 
-export const subtractDots = (
-	[count1, bitmap1]: BBP,
-	[count2, bitmap2]: BBP,
-): number[] => {
+export const subtractDots = ([count1, bitmap1]: BBP, [count2, bitmap2]: BBP): number[] => {
 	const [dots1, dots2] = count1 > count2 ? [
 		seq(count2 + 1, count1).concat(valuesAux(count1, bitmap1, [])),
 		valuesAux(count2, bitmap2, []),
@@ -103,21 +100,11 @@ const valuesAux = (
 };
 
 // Adds a dot (ID, Counter) to a BVV.
-export const add = (
-	clocks: OLByString<BVV>,
-	[id, counter]: Dot,
-): OLByString<BVV> => {
+export const add = (clocks: OLByString<BVV>, [id, counter]: Dot): OLByString<BVV> => {
 	const initial = addAux(bbp(0, 0), counter);
-	const fn = (entry: BBP) => addAux(entry, counter);
-
-	const newClocks = clocks.slice();
-	const idx = newClocks.findIndex(([id0]) => id0 === id);
-	if (idx > -1) {
-		newClocks[idx] = bvv(id, fn(newClocks[idx][1]));
-	} else {
-		newClocks.unshift(bvv(id, initial));
-	}
-	return ol<BVV>(...newClocks.sort(([id1], [id2]) => Number(id1 > id2)));
+	return clocks.update4(id, bvv(id, initial), (bbp0) => (
+		bvv(id, addAux(bbp0, counter))
+	));
 };
 
 // Adds a dot to a BVV entry, returning the normalized entry.
@@ -138,8 +125,8 @@ export const merge = (bvv1: OLByString<BVV>, bvv2: OLByString<BVV>): OLByString<
 // Joins entries from BVV2 that are also IDs in BVV1, into BVV1.
 export const join = (bvvList1: OLByString<BVV>, bvvList2: OLByString<BVV>): OLByString<BVV> => {
 	// filter keys from bvvList2 that are not in bvvList1
-	const bvvList1Keys = bvvList1.map(([id]) => id);
-	const bvvList2b = bvvList2.delete(([id]) => !bvvList1Keys.includes(id));
+	const bvvList1Keys = bvvList1.toArray(([id]) => id);
+	const bvvList2b = bvvList2.filter(([id]) => !bvvList1Keys.includes(id));
 	// merge bvvList1 with filtered bvvList2b
 	return merge(bvvList1, bvvList2b);
 };
