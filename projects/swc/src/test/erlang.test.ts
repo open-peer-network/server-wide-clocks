@@ -1,7 +1,9 @@
 import {
 	d,
 	vv,
-	Dot,
+	dvp,
+	olt,
+	DVP,
 } from "../swc-types";
 
 describe("erlang equivalents", () => {
@@ -51,6 +53,29 @@ describe("erlang equivalents", () => {
 
 		// verify that input is unchanged
 		expect(vv1).toEqual(vv(d("a", 1), d("c", 3)));
+
+		const dvp1 = olt<DVP>(
+			dvp(d("a", 8), "first"),
+			dvp(d("a", 13), "second"),
+		);
+		expect(
+			dvp1.store(dvp(d("a", 11), "middle"))
+		).toEqual(
+			olt<DVP>(
+				dvp(d("a", 8), "first"),
+				dvp(d("a", 11), "middle"),
+				dvp(d("a", 13), "second"),
+			)
+		)
+		expect(
+			dvp1.store(dvp(d("b", 1), "last"))
+		).toEqual(
+			olt<DVP>(
+				dvp(d("a", 8), "first"),
+				dvp(d("a", 13), "second"),
+				dvp(d("b", 1), "last"),
+			)
+		)
 	});
 	it("orddict:update/4", () => {
 		/*

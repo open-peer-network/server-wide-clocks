@@ -86,12 +86,14 @@ export const leftJoin = ([a1, a2]: VVM, [b1, b2]: VVM): VVM => (
 	vvm(leftJoinAux(a1, b1), leftJoinAux(a2, b2))
 );
 
+// export const leftJoinAux = (vvA: OLByString<EVVP>, vvB: OLByString<EVVP>): OLByString<EVVP> => {
 export const leftJoinAux = (vvA: OLByString<EVVP>, vvB: OLByString<EVVP>): OLByString<EVVP> => {
 	// filter entry peers from B that are not in A
-	// const peers = vvA.toArray((id: EVVP) => id[0]);
+	const peers = vvA.toArray((id: EVVP) => id[0]);
+	const vvB2 = vvB.filter((tuple) => peers.includes(tuple[0]));
 
-	return vvB.merge(vvA, (vvL, vvR) => (
-		evvp(vvL[0], swcVv.leftJoin(vvL[1], vvR[1]))
+	return vvB2.merge(vvA, (vvL, vvR) => (
+		evvp(vvL[0], swcVv.leftJoin(vvR[1], vvL[1]))
 	));
 };
 

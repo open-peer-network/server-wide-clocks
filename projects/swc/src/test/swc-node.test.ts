@@ -27,14 +27,63 @@ describe('SWC Node', () => {
 	});
 
 	it('missing dots', () => {
-		const b1 = ol<BVV>(bvv("a", bbp(12, 0)), bvv("b", bbp(7, 0)), bvv("c", bbp(4, 0)), bvv("d", bbp(5, 0)), bvv("e", bbp(5, 0)), bvv("f", bbp(7, 10)), bvv("g", bbp(5, 10)), bvv("h", bbp(5, 14)));
-		const b2 = ol<BVV>(bvv("a", bbp(5, 14)), bvv("b", bbp(5, 14)), bvv("c", bbp(5, 14)), bvv("d", bbp(5, 14)), bvv("e", bbp(15, 0)), bvv("f", bbp(5, 14)), bvv("g", bbp(7, 10)), bvv("h", bbp(7, 10)));
+		const b1 = ol<BVV>(
+			bvv("a", bbp(12, 0)),
+			bvv("b", bbp(7, 0)),
+			bvv("c", bbp(4, 0)),
+			bvv("d", bbp(5, 0)),
+			bvv("e", bbp(5, 0)),
+			bvv("f", bbp(7, 10)),
+			bvv("g", bbp(5, 10)),
+			bvv("h", bbp(5, 14)),
+		);
+		const b2 = ol<BVV>(
+			bvv("a", bbp(5, 14)),
+			bvv("b", bbp(5, 14)),
+			bvv("c", bbp(5, 14)),
+			bvv("d", bbp(5, 14)),
+			bvv("e", bbp(15, 0)),
+			bvv("f", bbp(5, 14)),
+			bvv("g", bbp(7, 10)),
+			bvv("h", bbp(7, 10)),
+		);
 		expect(swc.missingDots(b1, b2,[])).toEqual([]);
-		expect(swc.missingDots(b1, b2,["a","b","c","d","e","f","g","h"])).toEqual([["a", [6, 10, 11, 12]], ["b", [6]], bvv("f", bbp(6, 11)), ["h", [8]]]);
-		expect(swc.missingDots(b1, b2,["a","c","d","e","f","g","h"])).toEqual([["a", [6, 10, 11, 12]], bvv("f", bbp(6, 11)), ["h", [8]]]);
-		expect(swc.missingDots(ol<BVV>(bvv("a", bbp(2, 2)), bvv("b", bbp(3, 0))), ol<BVV>(), ["a"])).toEqual([["a", [1, 2, 4]]]);
-		expect(swc.missingDots(ol<BVV>(bvv("a", bbp(2, 2)), bvv("b", bbp(3, 0))), ol<BVV>(), ["a","b"])).toEqual([["a", [1, 2, 4]], ["b", [1, 2, 3]]]);
-		expect(swc.missingDots(ol<BVV>(), b1, ["a","b","c","d","e","f","g","h"])).toEqual([]);
+		expect(swc.missingDots(b1, b2, ["a","b","c","d","e","f","g","h"])).toEqual([
+			["a", [6, 10, 11, 12]],
+			["b", [6]], ["f", [6, 11]],
+			["h", [8]],
+		]);
+		expect(swc.missingDots(b1, b2, ["a","c","d","e","f","g","h"])).toEqual([
+			["a", [6, 10, 11, 12]],
+			["f", [6, 11]],
+			["h", [8]],
+		]);
+		expect(swc.missingDots(
+			ol<BVV>(
+				bvv("a", bbp(2, 2)),
+				bvv("b", bbp(3, 0)),
+			),
+			ol<BVV>(),
+			["a"],
+		)).toEqual([
+			["a", [1, 2, 4]],
+		]);
+		expect(swc.missingDots(
+			ol<BVV>(
+				bvv("a", bbp(2, 2)),
+				bvv("b", bbp(3, 0)),
+			),
+			ol<BVV>(),
+			["a","b"],
+		)).toEqual([
+			["a", [1, 2, 4]],
+			["b", [1, 2, 3]],
+		]);
+		expect(swc.missingDots(
+			ol<BVV>(),
+			b1,
+			["a","b","c","d","e","f","g","h"],
+		)).toEqual([]);
 	});
 
 	it('subtract dots', () => {
@@ -72,10 +121,30 @@ describe('SWC Node', () => {
 	});
 
 	it('join', () => {
-		expect(swc.join(ol<BVV>(bvv("a", bbp(5, 3))), ol<BVV>(bvv("a", bbp(2, 4))))).toEqual(ol<BVV>(bvv("a", bbp(7, 0))));
-		expect(swc.join(ol<BVV>(bvv("a", bbp(5, 3))), ol<BVV>(bvv("b", bbp(2, 4))))).toEqual(ol<BVV>(bvv("a", bbp(7, 0))));
-		expect(swc.join(ol<BVV>(bvv("a", bbp(5, 3)), bvv("c", bbp(1, 2))), ol<BVV>(bvv("b", bbp(2, 4)), bvv("d", bbp(5, 3))))).toEqual(ol<BVV>(bvv("a", bbp(7, 0)), bvv("c", bbp(1, 2))));
-		expect(swc.join(ol<BVV>(bvv("a", bbp(5, 3)), bvv("c", bbp(1, 2))), ol<BVV>(bvv("b", bbp(2, 4)), bvv("c", bbp(5, 3))))).toEqual(ol<BVV>(bvv("a", bbp(7, 0)), bvv("c", bbp(7, 0))));
+		expect(swc.join(
+			ol<BVV>(bvv("a", bbp(5, 3))),
+			ol<BVV>(bvv("a", bbp(2, 4))),
+		)).toEqual(
+			ol<BVV>(bvv("a", bbp(7, 0))),
+		);
+		expect(swc.join(
+			ol<BVV>(bvv("a", bbp(5, 3))),
+			ol<BVV>(bvv("b", bbp(2, 4))),
+		)).toEqual(
+			ol<BVV>(bvv("a", bbp(7, 0))),
+		);
+		expect(swc.join(
+			ol<BVV>(bvv("a", bbp(5, 3)), bvv("c", bbp(1, 2))),
+			ol<BVV>(bvv("b", bbp(2, 4)), bvv("d", bbp(5, 3))),
+		)).toEqual(
+			ol<BVV>(bvv("a", bbp(7, 0)), bvv("c", bbp(1, 2))),
+		);
+		expect(swc.join(
+			ol<BVV>(bvv("a", bbp(5, 3)), bvv("c", bbp(1, 2))),
+			ol<BVV>(bvv("b", bbp(2, 4)), bvv("c", bbp(5, 3))),
+		)).toEqual(
+			ol<BVV>(bvv("a", bbp(7, 0)), bvv("c", bbp(7, 0))),
+		);
 	});
 
 	it('join aux', () => {

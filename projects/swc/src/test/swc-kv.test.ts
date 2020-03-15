@@ -1,6 +1,7 @@
 import {
     d,
     ol,
+    vv,
     olt,
     dvp,
     dcc,
@@ -315,24 +316,30 @@ describe('SWC KV', () => {
     });
 
     it('add DCC', () => {
-        expect(swc.addDCC(d1(), d("a", 11), "purple")).toEqual([
-            [
-                dvp(d("a", 8), "red"),
-                dvp(d("a", 11), "purple"),
-                dvp(d("b", 2), "green"),
-            ],
-            [
-                d("a", 11),
-            ],
-        ]);
-        expect(swc.addDCC(d2(), d("b", 11), "purple")).toEqual([
-            [
-                dvp(d("b", 11), "purple"),
-            ],
-            [
-                d("a", 4),
-                d("b", 20),
-            ],
-        ]);
+        expect(
+            swc.addDCC(d1(), d("a", 11), "purple")
+        ).toEqual(
+            dcc(
+                olt<DVP>(
+                    dvp(d("a", 8), "red"),
+                    dvp(d("a", 11), "purple"),
+                    dvp(d("b", 2), "green"),
+                ),
+                vv(
+                    d("a", 11),
+                ),
+            )
+        );
+        expect(swc.addDCC(d2(), d("b", 11), "purple")).toEqual(
+            dcc(
+                olt<DVP>(
+                    dvp(d("b", 11), "purple"),
+                ),
+                vv(
+                    d("a", 4),
+                    d("b", 20),
+                ),
+            )
+        );
     });
 });

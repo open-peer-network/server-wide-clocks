@@ -124,23 +124,21 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 
 	update4(newKey: Tuple, defaultTuple: T, fn: (val: T[1]) => T): OLByTuple<T> {
 		let done = false;
-		const keyText = `${newKey[0]},${newKey[1]}`;
+		const [newKeyL, newKeyR] = newKey;
 	
 		if (this.length < 1) {
-			const l = new OLByTuple<T>();
-			l[0] = defaultTuple;
-			return l;
+			return new OLByTuple<T>([defaultTuple]);
 		}
 		return this.reduce((acc, curTuple, idx) => {
-			const curKey = `${curTuple[0]},${curTuple[1]}`;
+			const [curKeyL, curKeyR] = curTuple[0];
 
 			if (!done) {
-				if (curKey === keyText) {
+				if (curKeyL === newKeyL && curKeyR === newKeyR) {
 					done = true;
 					acc[acc.length] = fn(curTuple[1]);
 					return acc;
 				}
-				if (curKey > keyText) {
+				if (curKeyL > newKeyL || curKeyL === newKeyL && curKeyR > newKeyR) {
 					done = true;
 					acc[acc.length] = defaultTuple;
 					acc[acc.length] = curTuple;
@@ -160,26 +158,29 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 	store(newTuple: T): OLByTuple<T> {
 		let done = false;
 		const tupleKey = newTuple[0];
-		const keyText = `${tupleKey[0]},${tupleKey[1]}`;
+		const [newKeyL, newKeyR] = tupleKey;
 
 		if (this.length < 1) {
-			const l = new OLByTuple<T>();
-			l[0] = newTuple;
-			return l;
+			return new OLByTuple<T>([newTuple]);
 		}
-		return this.reduce((acc, curTuple) => {
-			const curKey = `${curTuple[0]},${curTuple[1]}`;
+		return this.reduce((acc, curTuple, idx) => {
+			const [curKeyL, curKeyR] = curTuple[0];
 	
 			if (!done) {
-				if (curKey === keyText) {
+				if (curKeyL === newKeyL && curKeyR === newKeyR) {
 					done = true;
 					acc[acc.length] = newTuple;
 					return acc;
 				}
-				if (curKey > keyText) {
+				if (curKeyL > newKeyL || curKeyL === newKeyL && curKeyR > newKeyR) {
 					done = true;
 					acc[acc.length] = newTuple;
 					acc[acc.length] = curTuple;
+					return acc;
+				}
+				if (idx === this.length - 1) {
+					acc[acc.length] = curTuple;
+					acc[acc.length] = newTuple;
 					return acc;
 				}
 			}
@@ -257,9 +258,7 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		let done = false;
 	
 		if (this.length < 1) {
-			const l = new OLByString<T>();
-			l[0] = defaultTuple;
-			return l;
+			return new OLByString<T>([defaultTuple]);
 		}
 		return this.reduce((acc, curTuple, idx) => {
 			const curKey = curTuple[0];
@@ -292,9 +291,7 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		const newKey = newTuple[0];
 
 		if (this.length < 1) {
-			const l = new OLByString<T>();
-			l[0] = newTuple;
-			return l;
+			return new OLByString<T>([newTuple]);
 		}
 		return this.reduce((acc, curTuple, idx) => {
 			const curKey = curTuple[0];

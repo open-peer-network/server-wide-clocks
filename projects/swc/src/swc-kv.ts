@@ -54,7 +54,7 @@ export const sync = ([dvp1, dots1]: DCC, [dvp2, dots2]: DCC): DCC => {
 // the function swc_node:add/2 defined over BVV and dots, the BVV, and the list of
 // dots in the DCC.
 export const addBVV = (someBvv: OLByString<BVV>, [versions]: DCC): OLByString<BVV> => {
-	const dots = ol<Dot>(...versions.toArray(([dot]) => dot));
+	const dots = ol<Dot>(...versions.toArray((dot) => dot[0]));
 	return dots.reduce((acc, item) => swcNode.add(acc, item), someBvv);
 };
 

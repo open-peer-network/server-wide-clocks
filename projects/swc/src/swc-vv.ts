@@ -4,11 +4,6 @@ import {
 	VV,
 } from './swc-types';
 
-// Returns all the keys (ids) from a VV.
-export const vvIds = (vvd: VV): string[] => (
-	Array.prototype.map.call(vvd, (dot: Dot) => dot[0])
-);
-
 export const isKey = (vv: VV, id: string): boolean => (
 	vv.some(([id0]) => id0 === id)
 );
@@ -22,16 +17,21 @@ export const get = (id: string, vv: VV): number => {
 
 // Merges or joins two VVs, taking the maximum counter if an entry is
 // present in both VVs.
-export const join = (a: VV, b: VV): VV => a.merge(
-	b,
-	(a: Dot, b: Dot) => d(a[0], Math.max(a[1], b[1])),
+export const join = (a: VV, b: VV): VV => (
+	a.merge(b, (a: Dot, b: Dot) => (
+		d(a[0], Math.max(a[1], b[1]))
+	))
 );
 
 // Left joins two VVs, taking the maximum counter if an entry is
 // present in both VVs, and also taking the entry in A and not in B.
-export const leftJoin = (a: VV, b: VV) => {
-	const ids = vvIds(a);
-	return join(a, b.filter(([id]) => ids.includes(id)));
+export const leftJoin = (a: VV, b: VV): VV => {
+	const peers = a.toArray((id: Dot) => id[0]);
+	const b2 = b.filter(([id]) => peers.includes(id));
+
+	return b2.merge(a, (d1, d2) => (
+		d(d1[0], Math.max(d1[1], d2[1]))
+	));
 };
 
 // Adds an entry {Id, Counter} to the VV, performing the maximum between
