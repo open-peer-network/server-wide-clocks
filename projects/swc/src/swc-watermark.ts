@@ -42,30 +42,24 @@ const updatePeerAux = (vvA: OLByString<EVVP>, entry: string, nodeClock: OLByStri
 	})
 );
 
-export const replacePeer = (vvm1: VVM, oldId: string, newId: string): VVM => {
-	const [vvL, vvR] = vvm1;
-	const found = vvL.find(([id]: EVVP) => id === oldId);
-
-	const filteredDots = (dots: OLByString<Dot>): string[] => (
-		dots.toArray(([id]) => id).filter((id) => id !== oldId)
-	);
-	const newVvm = (dots: OLByString<Dot>) => (
-		addPeer(vvm1, newId, filteredDots(dots))[0]
-	);
-	const vvL2 = found ? newVvm(found[1]) : vvL;
-
-	const fn = (vvX: EVVP): EVVP => {
-		const [id, dots] = vvX;
-		if (dots.some(([idX]) => idX === oldId)) {
-			return evvp(id, swcVv.add(swcVv.deleteKey(dots, oldId), d(newId, 0)));
+export const replacePeer = (vvmA: VVM, Old: string, New: string): VVM => {
+	const [M, R] = vvmA;
+    const M3 = M.some(([id]) => id === Old) ? (() => {
+		const OldPeers0 = (M.fetch(Old) as OLByString<Dot>).toArray(([id]) => id);
+		const OldPeers = OldPeers0.filter((id) => id !== Old);
+		const [M2] = addPeer(vvmA, New, OldPeers);
+		return M2.erase(Old);
+	})() : M;
+    const fn = ([K, V]: EVVP) => {
+		const match = V.find(([id]) => id === Old);
+		if (match) {
+			const V2 = V.erase(Old); // swc_vv:delete_key(V, Old),
+			return evvp(K, swcVv.add(V2, [New, 0]));
 		} else {
-			return vvX;
+			return evvp(K, V);
 		}
 	};
-	return vvm(
-		ol<EVVP>(...vvL2.map(fn)),
-		ol<EVVP>(...vvR.map(fn)),
-	);
+	return vvm(M3.map(fn), R.map(fn));
 };
 
 /*
