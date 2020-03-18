@@ -1,4 +1,4 @@
-// import { vv, dvp, Dot, VV, DVP, OLByString, OLByTuple } from "./swc-types";
+// import { vv, dvp, Dot, VV, DVP, OLByPrim, OLByTuple } from "./swc-types";
 
 // // type prim = string | boolean | number;
 

@@ -6,16 +6,17 @@ import {
 	evvp,
 	BVV,
 	VVM,
+	DKM,
 	Dot,
 	EVVP,
-	OLByString,
+	OLByPrim,
 } from './swc-types';
 import * as swcNode from './swc-node';
-// import * as swcDkm from './swc-dotkeymatrix';
+// import * as swcDkm from './swc-dotkeymap';
 import * as swcVv from './swc-vv';
 
 
-export const addPeer = ([bvvA, bvvB]: [OLByString<EVVP>, OLByString<EVVP>], peer: string, itsPeers: string[]): VVM => {
+export const addPeer = ([bvvA, bvvB]: VVM, peer: string, itsPeers: string[]): VVM => {
 	const newDots = ol<Dot>(...[peer, ...itsPeers].reduce((acc, id) => (
 		swcVv.add(acc, d(id, 0))
 	), ol<Dot>()));
@@ -24,14 +25,14 @@ export const addPeer = ([bvvA, bvvB]: [OLByString<EVVP>, OLByString<EVVP>], peer
 	return vvm(bvvA.store(evvp(peer, newDots)), bvvB);
 };
 
-export const updatePeer = ([bvvA, bvvB]: VVM, entry: string, nodeClock: OLByString<BVV>): VVM => (
+export const updatePeer = ([bvvA, bvvB]: VVM, entry: string, nodeClock: OLByPrim<BVV>): VVM => (
 	vvm(
 		updatePeerAux(bvvA, entry, nodeClock),
 		updatePeerAux(bvvB, entry, nodeClock),
 	)
 );
 
-const updatePeerAux = (vvA: OLByString<EVVP>, entry: string, nodeClock: OLByString<BVV>): OLByString<EVVP> => (
+const updatePeerAux = (vvA: OLByPrim<EVVP>, entry: string, nodeClock: OLByPrim<BVV>): OLByPrim<EVVP> => (
 	vvA.map(([id, dots]: EVVP) => {
 		if (dots.some(([dotId]) => dotId === entry)) {
 			const [base] = swcNode.get(id, nodeClock);
@@ -42,46 +43,41 @@ const updatePeerAux = (vvA: OLByString<EVVP>, entry: string, nodeClock: OLByStri
 	})
 );
 
-export const replacePeer = (vvmA: VVM, Old: string, New: string): VVM => {
-	const [M, R] = vvmA;
-    const M3 = M.some(([id]) => id === Old) ? (() => {
-		const OldPeers0 = (M.fetch(Old) as OLByString<Dot>).toArray(([id]) => id);
-		const OldPeers = OldPeers0.filter((id) => id !== Old);
-		const [M2] = addPeer(vvmA, New, OldPeers);
-		return M2.erase(Old);
-	})() : M;
-    const fn = ([K, V]: EVVP) => {
-		const match = V.find(([id]) => id === Old);
+export const replacePeer = (vvmA: VVM, oldId: string, newId: string): VVM => {
+	const [vvL1, vvR1] = vvmA;
+    const vvL2 = vvL1.some(([id]) => id === oldId) ? (() => {
+		const oldPeerIds = (vvL1.fetch(oldId) as OLByPrim<Dot>).toArray(([id]) => id);
+		const oldPeerIdsFiltered = oldPeerIds.filter((id) => id !== oldId);
+		return addPeer(vvmA, newId, oldPeerIdsFiltered)[0].erase(oldId);
+	})() : vvL1;
+    const fn = ([id, dots]: EVVP) => {
+		const match = dots.find(([idX]) => idX === oldId);
 		if (match) {
-			const V2 = V.erase(Old); // swc_vv:delete_key(V, Old),
-			return evvp(K, swcVv.add(V2, [New, 0]));
+			// const V2 = dots.erase(oldId); // swc_vv.deleteKey(dots, oldId),
+			return evvp(id, swcVv.add(dots.erase(oldId), [newId, 0]));
 		} else {
-			return evvp(K, V);
+			return evvp(id, dots);
 		}
 	};
-	return vvm(M3.map(fn), R.map(fn));
+	return vvm(vvL2.map(fn), vvR1.map(fn));
 };
 
-/*
-// -spec retire_peer(vv_matrix(), Old::id(), New::id()) -> vv_matrix().
-retire_peer({M,R}, Old, New) ->
-case orddict.find(Old, M) of
-	error ->
-		replace_peer({M,R}, Old, New);
-	{ok, OldEntry} ->
-		// CurrentCounter = swcVv.get(Old, OldEntry),
-		// OldEntry2 = swcVv.add(OldEntry, {Old, CurrentCounter+Jump}),
-		R1 = orddict.store(Old, OldEntry, R),
-		replace_peer({M,R1}, Old, New)
-end.
-*/
+export const retirePeer = ([vvL, vvR]: VVM, oldId: string, newId: string): VVM => {
+	const found = vvL.find(([id]) => id === oldId);
+	if (found) {
+		// const currentCounter = swcVv.get(oldId, found);
+		// const found2 = swcVv.add(found, [oldId, currentCounter + jump]);
+		return replacePeer(vvm(vvL, vvR.store(found)), oldId, newId);
+	} else {
+		return replacePeer(vvm(vvL, vvR), oldId, newId);
+	}
+};
 
 export const leftJoin = ([a1, a2]: VVM, [b1, b2]: VVM): VVM => (
 	vvm(leftJoinAux(a1, b1), leftJoinAux(a2, b2))
 );
 
-// export const leftJoinAux = (vvA: OLByString<EVVP>, vvB: OLByString<EVVP>): OLByString<EVVP> => {
-export const leftJoinAux = (vvA: OLByString<EVVP>, vvB: OLByString<EVVP>): OLByString<EVVP> => {
+export const leftJoinAux = (vvA: OLByPrim<EVVP>, vvB: OLByPrim<EVVP>): OLByPrim<EVVP> => {
 	// filter entry peers from B that are not in A
 	const peers = vvA.toArray((id: EVVP) => id[0]);
 	const vvB2 = vvB.filter((tuple) => peers.includes(tuple[0]));
@@ -113,7 +109,7 @@ export const min = ([vvL, vvR]: VVM, id: string): number => (
 	Math.max(minAux(vvL, id), minAux(vvR, id))
 );
 
-export const minAux = (vv1: OLByString<EVVP>, id: string): number => {
+export const minAux = (vv1: OLByPrim<EVVP>, id: string): number => {
 	const vv2 = vv1.find(([id0]) => id0 === id);
 	return vv2 ? swcVv.min(vv2[1]) : 0;
 };
@@ -141,13 +137,8 @@ export const deletePeer = ([vva, vvb]: VVM, id: string): VVM => (
 	)
 );
 
-/*
-export const pruneRetiredPeers = (
-	[a, b]: VVM,
-	dkm: DKM[],
-	dontRemotePeers: string[],
-): VVM => vvm(a, b.filter((peer) => (
-	swcDkm.isKey(dkm, peer) ||
-	dontRemotePeers.includes(peer)
-)));
-*/
+export const pruneRetiredPeers = ([a, b]: VVM, dkm: OLByPrim<DKM>, dontRemotePeers: string[]): VVM => (
+	vvm(a, b.filter(([peer]) => (
+		dkm.some(([id]) => id === peer) || dontRemotePeers.includes(peer)
+	)))
+);

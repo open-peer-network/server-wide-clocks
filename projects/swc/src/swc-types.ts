@@ -66,7 +66,7 @@ export class OrderedList<T extends Tuple> extends Array<T> {
 	}
 }
 
-export type StringKeyTuple = [string, any] & {
+export type PrimKeyTuple = [string | number, any] & {
 	tupleType?: string,
 };
 
@@ -203,28 +203,25 @@ export class OLByTuple<T extends TupleKeyTuple> extends OrderedList<T> {
 	}
 }
 
-export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
+export class OLByPrim<T extends PrimKeyTuple> extends OrderedList<T> {
 	constructor(arr?: T[]) {
 		super();
 		if (arr && arr.length) {
-			[...arr].sort((a, b) => isArray(a) && isArray(b)
-				? Number(a.join() > b.join())
-				: 0
-			).reduce((acc, next) => {
+			[...arr].sort(([a], [b]) => Number(a > b)).reduce((acc, next) => {
 				acc[acc.length] = next;
 				return acc;
 			}, this);
 		}
 	}
 
-	filter(fn: (t: T, i?: number) => boolean): OLByString<T> {
+	filter(fn: (t: T, i?: number) => boolean): OLByPrim<T> {
 		return this.reduce((ac, t: T, i: number) => {
 			if (fn(t, i)) ac[ac.length] = t;
 			return ac;
-		}, new OLByString<T>());
+		}, new OLByPrim<T>());
 	}
 
-	erase(k: string): OLByString<T> {
+	erase(k: string): OLByPrim<T> {
 		return this.filter((t) => t[0] !== k);
 	}
 
@@ -236,7 +233,7 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		return found[1];
 	}
 
-	merge(incomingList: OLByString<T>, mergeFn: (a: T, b: T) => T): OLByString<T> {
+	merge(incomingList: OLByPrim<T>, mergeFn: (a: T, b: T) => T): OLByPrim<T> {
 		const sourceMap: POJO<T> = this.reduce((ac, t: T) => ({
 			[t[0]]: t,
 			...ac,
@@ -254,11 +251,11 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		return ol<T>(...toOrderedArray<T>(mergedMap));
 	}
 
-	update4(newKey: string, defaultTuple: T, fn: (val: T[1]) => T): OLByString<T> {
+	update4(newKey: string, defaultTuple: T, fn: (val: T[1]) => T): OLByPrim<T> {
 		let done = false;
 	
 		if (this.length < 1) {
-			return new OLByString<T>([defaultTuple]);
+			return new OLByPrim<T>([defaultTuple]);
 		}
 		return this.reduce((acc, curTuple, idx) => {
 			const curKey = curTuple[0];
@@ -283,15 +280,15 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 			}
 			acc[acc.length] = curTuple;
 			return acc;
-		}, new OLByString<T>());
+		}, new OLByPrim<T>());
 	}
 
-	store(newTuple: T): OLByString<T> {
+	store(newTuple: T): OLByPrim<T> {
 		let done = false;
 		const newKey = newTuple[0];
 
 		if (this.length < 1) {
-			return new OLByString<T>([newTuple]);
+			return new OLByPrim<T>([newTuple]);
 		}
 		return this.reduce((acc, curTuple, idx) => {
 			const curKey = curTuple[0];
@@ -309,15 +306,20 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 					return acc;
 				}
 				if (idx === this.length - 1) {
-					acc[acc.length] = curTuple;
-					acc[acc.length] = newTuple;
+					if (curKey > newKey) {
+						acc[acc.length] = newTuple;
+						acc[acc.length] = curTuple;
+					} else {
+						acc[acc.length] = curTuple;
+						acc[acc.length] = newTuple;
+					}
 					return acc;
 				}
 			}
 	
 			acc[acc.length] = curTuple;
 			return acc;
-		}, new OLByString<T>());
+		}, new OLByPrim<T>());
 	}
 
 	toArray<U extends prim>(fn: (t?: T, i?: number) => U): U[] {
@@ -326,8 +328,8 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 		return res;
 	}
 
-	map(fn: (t?: T, i?: number) => T): OLByString<T> {
-		const res = new OLByString<T>();
+	map(fn: (t?: T, i?: number) => T): OLByPrim<T> {
+		const res = new OLByPrim<T>();
 		this.forEach((t: T, i) => { res[res.length] = fn(t, i); });
 		return res;
 	}
@@ -336,21 +338,20 @@ export class OLByString<T extends StringKeyTuple> extends OrderedList<T> {
 export type Dot = [string, number] & {
 	tupleType?: "Dot",
 };
-export const d = (a: string, b: number): Dot => {
-	const ob = (a && typeof b === "number") ? [a, b] : [];
-	return setType(ob, "Dot");
-};
+export const d = (a: string, b: number): Dot => (
+	setType((a && typeof b === "number") ? [a, b] : [], "Dot")
+);
 
 // VV = Version Vector
 // EVVP = Entry/Version Vector Pair
-export type VV = OLByString<Dot>;
-export type EVVP = [string, OLByString<Dot>] & {
+export type VV = OLByPrim<Dot>;
+export type EVVP = [string, OLByPrim<Dot>] & {
 	tupleType?: "EVVP",
 };
 export const vv = (...dots: Dot[]): VV => (
 	ol<Dot>(...dots)
 );
-export const evvp = (a: string, b: OLByString<Dot>): EVVP => {
+export const evvp = (a: string, b: OLByPrim<Dot>): EVVP => {
 	if (typeof a !== "string" || !isArray(b)) {
 		throw new Error("invalid EVVP");
 	}
@@ -367,58 +368,74 @@ export const evvp = (a: string, b: OLByString<Dot>): EVVP => {
 export type BVV = [string, BBP] & {
 	tupleType?: "BVV",
 };
-export const bvv = (a: string, b: BBP): BVV => {
-	const ob = [a, b];
-	return setType(ob, "BVV");
-};
+export const bvv = (a: string, b: BBP): BVV => (
+	setType([a, b], "BVV")
+);
 
 // DVP = Dot/Value Pair
 export type DVP = [Dot, string] & {
 	tupleType?: "DVP",
 };
-export const dvp = (dot: Dot, value: any): DVP => {
-	const ob = [dot, value];
-	return setType(ob, "DVP");
-};
+export const dvp = (dot: Dot, value: any): DVP => (
+	setType([dot, value], "DVP")
+);
 
 // BBP = Base/Bitmap Pair
 export type BBP = [number, number] & {
 	tupleType?: "BBP",
 };
-export const bbp = (base: number, bitmap: number): BBP => {
-	const ob = [base, bitmap];
-	return setType(ob, "BBP");
-};
+export const bbp = (base: number, bitmap: number): BBP => (
+	setType([base, bitmap], "BBP")
+);
 
 // VVM = Version Vector Matrix
-export type VVM = [OLByString<EVVP>, OLByString<EVVP>] & {
+export type VVM = [OLByPrim<EVVP>, OLByPrim<EVVP>] & {
 	tupleType?: "VVM",
 };
-export const vvm = (vvs1: OLByString<EVVP>, vvs2: OLByString<EVVP>): VVM => {
-	const ob = [vvs1, vvs2];
-	return setType(ob, "VVM");
-};
+export const vvm = (vvs1: OLByPrim<EVVP>, vvs2: OLByPrim<EVVP>): VVM => (
+	setType([vvs1, vvs2], "VVM")
+);
 
-// DKM = Dotkey Matrix
+// DKM = Dot/Key Matrix
 export type DKM = [string, number[]] & {
 	tupleType?: "DKM",
 };
-export const dkm = (a: string, b: number[]): DKM => {
-	const ob = [a, b];
-	return setType(ob, "DKM");
+export const dkm = (a: string, b: number[]): DKM => (
+	setType([a, b], "DKM")
+);
+
+// DKE = Dot/Key Entry
+export type DKE = [number, string] & {
+	tupleType?: "DKE" // DotKey Entry
 };
+export const dke = (n: number, s: string): DKE => (
+	setType([n, s], "DKE")
+);
+
+// KME = Key Matrix Entry
+export type KME = [string, OLByPrim<DKE>] & {
+	tupleType?: "KME",
+};
+export const kme = (s: string, list: OLByPrim<DKE>): KME => (
+	setType([s, list], "KME")
+);
+
+// KM = Key Matrix: { string, { number, string }[] }[]
+export type KM = OLByPrim<KME>;
+export const km = (...list: KME[]): OLByPrim<KME> => (
+	new OLByPrim<KME>(list)
+);
 
 // CC = Causal Context
 // DCC = Dotted Causal Container
-export type DCC = [OLByTuple<DVP>, OLByString<Dot>] & {
+export type DCC = [OLByTuple<DVP>, OLByPrim<Dot>] & {
 	tupleType?: "DCC",
 };
-export const dcc = (dvp1: OLByTuple<DVP>, dots: OLByString<Dot>): DCC => {
-	const ob = [dvp1, dots];
-	return setType(ob, "DCC");
-};
-export const ol = <T extends StringKeyTuple>(...list: T[]) => (
-	new OLByString<T>(list)
+export const dcc = (dvp1: OLByTuple<DVP>, dots: OLByPrim<Dot>): DCC => (
+	setType([dvp1, dots], "DCC")
+);
+export const ol = <T extends PrimKeyTuple>(...list: T[]) => (
+	new OLByPrim<T>(list)
 );
 export const olt = <T extends TupleKeyTuple>(...list: T[]) => (
 	new OLByTuple<T>(list)

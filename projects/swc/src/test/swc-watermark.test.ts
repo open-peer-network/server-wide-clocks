@@ -6,8 +6,10 @@ import {
 	bbp,
 	bvv,
 	vvm,
+	dkm,
 	evvp,
 	BVV,
+	DKM,
 	EVVP,
 } from '../swc-types';
 
@@ -402,89 +404,106 @@ describe('SWC Watermark', () => {
 			ol<EVVP>(),
 		));
 	});
-/*
+
 	it('retire peer', () => {
-		const A = swc.addPeer(vvm(
-			ol<EVVP>(], []), "a", ["b","c"]);
-		const B = swc.addPeer(A,     "b", ["a","c"]);
-		const C = swc.addPeer(B,     "c", ["a","b"]);
+		const A = swc.addPeer(vvm(ol<EVVP>(), ol<EVVP>()), "a", ["b","c"]);
+		const B = swc.addPeer(A, "b", ["a","c"]);
+		const C = swc.addPeer(B, "c", ["a","b"]);
 		const Z = vvm(
 			ol<EVVP>(
-			evvp("a", vv(d("a", 9), d("c", 2), d("z", 3))),
-			evvp("c", vv(d("a", 1), d("c", 4), d("z", 3))),
-			evvp("z", vv(d("a", 0), d("c", 1), d("z", 2))),
-		],
-		[]);
+				evvp("a", vv(d("a", 9), d("c", 2), d("z", 3))),
+				evvp("c", vv(d("a", 1), d("c", 4), d("z", 3))),
+				evvp("z", vv(d("a", 0), d("c", 1), d("z", 2))),
+			),
+			ol<EVVP>(),
+		);
 		const W = vvm(
 			ol<EVVP>(
-			evvp("b", vv(d("a", 9), d("b", 2), d("c", 3))),
-			evvp("c", vv(d("b", 1), d("c", 4), d("d", 3))),
-			evvp("d", vv(d("c", 0), d("d", 1), d("e", 2))),
-		),
-		ol<EVVP>(),
-	);
-		expect(swc.retirePeer(C, "b", "z")).toEqual(vvm(
-			ol<EVVP>(
-			evvp("a", vv(d("a", 0), d("c", 0), d("z", 0))),
-			evvp("c", vv(d("a", 0), d("c", 0), d("z", 0))),
-			evvp("z", vv(d("a", 0), d("c", 0), d("z", 0))),
-		],
-		[
-			evvp("b", vv(d("a", 0), d("c", 0), d("z", 0))),
-		]));
-		expect(swc.retirePeer(Z, "a", "b")).toEqual(vvm(
-			ol<EVVP>(
-			evvp("b", vv(d("b", 0), d("c", 0), d("z", 0))),
-			evvp("c", vv(d("b", 0), d("c", 4), d("z", 3))),
-			evvp("z", vv(d("b", 0), d("c", 1), d("z", 2))),
-		],
-		[
-			evvp("a", vv(d("b", 0), d("c", 2), d("z", 3))),
-		]));
-		expect(swc.retirePeer(W, "b", "z")).toEqual(vvm(
-			ol<EVVP>(
-			evvp("c", vv(d("c", 4), d("d", 3), d("z", 0))),
-			evvp("d", vv(d("c", 0), d("d", 1), d("e", 2))),
-			evvp("z", vv(d("a", 0), d("c", 0), d("z", 0))),
-		],
-		[
-			evvp("b", vv(d("a", 9), d("c", 3), d("z", 0))),
-		]));
-		expect(swc.retirePeer(W, "a", "z")).toEqual(vvm(
-			ol<EVVP>(
-			evvp("b", vv(d("b", 2), d("c", 3), d("z", 0))),
-			evvp("c", vv(d("b", 1), d("c", 4), d("d", 3))),
-			evvp("d", vv(d("c", 0), d("d", 1), d("e", 2))),
-		),
-		ol<EVVP>(),
-	));
+				evvp("b", vv(d("a", 9), d("b", 2), d("c", 3))),
+				evvp("c", vv(d("b", 1), d("c", 4), d("d", 3))),
+				evvp("d", vv(d("c", 0), d("d", 1), d("e", 2))),
+			),
+			ol<EVVP>(),
+		);
+		expect(swc.retirePeer(C, "b", "z")).toEqual(
+			vvm(
+				ol<EVVP>(
+					evvp("a", vv(d("a", 0), d("c", 0), d("z", 0))),
+					evvp("c", vv(d("a", 0), d("c", 0), d("z", 0))),
+					evvp("z", vv(d("a", 0), d("c", 0), d("z", 0))),
+				),
+				ol<EVVP>(
+					evvp("b", vv(d("a", 0), d("c", 0), d("z", 0))),
+				),
+			)
+		);
+		expect(swc.retirePeer(Z, "a", "b")).toEqual(
+			vvm(
+				ol<EVVP>(
+					evvp("b", vv(d("b", 0), d("c", 0), d("z", 0))),
+					evvp("c", vv(d("b", 0), d("c", 4), d("z", 3))),
+					evvp("z", vv(d("b", 0), d("c", 1), d("z", 2))),
+				),
+				ol<EVVP>(
+					evvp("a", vv(d("b", 0), d("c", 2), d("z", 3))),
+				),
+			)
+		);
+		expect(swc.retirePeer(W, "b", "z")).toEqual(
+			vvm(
+				ol<EVVP>(
+					evvp("c", vv(d("c", 4), d("d", 3), d("z", 0))),
+					evvp("d", vv(d("c", 0), d("d", 1), d("e", 2))),
+					evvp("z", vv(d("a", 0), d("c", 0), d("z", 0))),
+				),
+				ol<EVVP>(
+					evvp("b", vv(d("a", 9), d("c", 3), d("z", 0))),
+				),
+			)
+		);
+		expect(swc.retirePeer(W, "a", "z")).toEqual(
+			vvm(
+				ol<EVVP>(
+					evvp("b", vv(d("b", 2), d("c", 3), d("z", 0))),
+					evvp("c", vv(d("b", 1), d("c", 4), d("d", 3))),
+					evvp("d", vv(d("c", 0), d("d", 1), d("e", 2))),
+				),
+				ol<EVVP>(),
+			)
+		);
 	});
 
 	it('prune retired peers', () => {
-		const D1 = [dkm("a", [1,2,22]), dkm("b", [4,5,11])];
-		const D2 = [dkm("a", [1,2,22]), dkm("z", [4,5,11])];
+		const D1 = ol<DKM>(
+			dkm("a", [1,2,22]),
+			dkm("b", [4,5,11]),
+		);
+		const D2 = ol<DKM>(
+			dkm("a", [1,2,22]),
+			dkm("z", [4,5,11]),
+		);
 		const A = vvm(
 			ol<EVVP>(
-			evvp("a", vv(d("a", 0), d("c", 0), d("z", 0))),
-			evvp("c", vv(d("a", 0), d("c", 0), d("z", 0))),
-			evvp("z", vv(d("a", 0), d("c", 0), d("z", 0))),
-		],
-		[
-			evvp("b", vv(d("a", 0), d("b", 0), d("c", 0))),
-		]);
+				evvp("a", vv(d("a", 0), d("c", 0), d("z", 0))),
+				evvp("c", vv(d("a", 0), d("c", 0), d("z", 0))),
+				evvp("z", vv(d("a", 0), d("c", 0), d("z", 0))),
+			),
+			ol<EVVP>(
+				evvp("b", vv(d("a", 0), d("b", 0), d("c", 0))),
+			),
+		);
 		const A2 = vvm(
 			ol<EVVP>(
-			evvp("a", vv(d("a", 0), d("c", 0), d("z", 0))),
-			evvp("c", vv(d("a", 0), d("c", 0), d("z", 0))),
-			evvp("z", vv(d("a", 0), d("c", 0), d("z", 0))),
-		),
-		ol<EVVP>(),
-	);
+				evvp("a", vv(d("a", 0), d("c", 0), d("z", 0))),
+				evvp("c", vv(d("a", 0), d("c", 0), d("z", 0))),
+				evvp("z", vv(d("a", 0), d("c", 0), d("z", 0))),
+			),
+			ol<EVVP>(),
+		);
 		expect(swc.pruneRetiredPeers(A, D1, [])).toEqual(A);
 		expect(swc.pruneRetiredPeers(A, D1, ["a", "b", "c", "z"])).toEqual(A);
 		expect(swc.pruneRetiredPeers(A, D2, [])).toEqual(A2);
 		expect(swc.pruneRetiredPeers(A, D2, ["b"])).toEqual(A);
-		expect(swc.pruneRetiredPeers(A, [], [])).toEqual(A2);
+		expect(swc.pruneRetiredPeers(A, ol<DKM>(), [])).toEqual(A2);
 	});
-*/
 });

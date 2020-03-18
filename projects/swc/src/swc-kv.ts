@@ -8,7 +8,7 @@ import {
 	VV,
 	DCC,
 	BVV,
-	OLByString,
+	OLByPrim,
 } from './swc-types';
 import * as swcVv from './swc-vv';
 import * as swcNode from './swc-node';
@@ -53,7 +53,7 @@ export const sync = ([dvp1, dots1]: DCC, [dvp2, dots2]: DCC): DCC => {
 // is accomplished by using the standard fold higher-order function, passing
 // the function swc_node:add/2 defined over BVV and dots, the BVV, and the list of
 // dots in the DCC.
-export const addBVV = (someBvv: OLByString<BVV>, [versions]: DCC): OLByString<BVV> => {
+export const addBVV = (someBvv: OLByPrim<BVV>, [versions]: DCC): OLByPrim<BVV> => {
 	const dots = ol<Dot>(...versions.toArray((dot) => dot[0]));
 	return dots.reduce((acc, item) => swcNode.add(acc, item), someBvv);
 };
@@ -79,14 +79,14 @@ export const discard = ([dvps, ccDots]: DCC, dot: VV): DCC => dcc(
 // greater sequence numbers are kept. The idea is that DCCs are stored after
 // being stripped of their causality information that is already present in the
 // node clock BVV.
-export const strip = ([someDvp, dots]: DCC, someBvv: OLByString<BVV>): DCC => dcc(
+export const strip = ([someDvp, dots]: DCC, someBvv: OLByPrim<BVV>): DCC => dcc(
 	someDvp,
 	dots.filter(([id, n]: Dot) => n > swcNode.get(id, someBvv)[0]),
 );
 
 // Function fill/2 adds back causality information to a stripped DCC, before
 // any operation is performed.
-export const fill2 = ([someDvp, dots]: DCC, someBvv: OLByString<BVV>): DCC => dcc(
+export const fill2 = ([someDvp, dots]: DCC, someBvv: OLByPrim<BVV>): DCC => dcc(
 	someDvp,
 	someBvv.reduce((acc, [id]: BVV) => {
 		const [base] = swcNode.get(id, someBvv);
@@ -96,7 +96,7 @@ export const fill2 = ([someDvp, dots]: DCC, someBvv: OLByString<BVV>): DCC => dc
 
 // Same as fill/2 but only adds entries that are elements of a list of Ids,
 // instead of adding all entries in the BVV.
-export const fill3 = ([someDvp, dots]: DCC, someBvv: OLByString<BVV>, ids: string[]): DCC => {
+export const fill3 = ([someDvp, dots]: DCC, someBvv: OLByPrim<BVV>, ids: string[]): DCC => {
 	// only consider ids that belong to both the list of ids received and the BVV
 	const cross = someBvv
 	.toArray<string>(([id]) => id)

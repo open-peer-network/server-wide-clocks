@@ -6,14 +6,14 @@ import {
 	Dot,
 	BVV,
 	BBP,
-	OLByString,
+	OLByPrim,
 } from './swc-types';
 
 
 // Returns the entry of a BVV associated with a given ID.
 export const get = (
 	bbpA: string,
-	bvvA: OLByString<BVV>,
+	bvvA: OLByPrim<BVV>,
 ): BBP => {
 	const match = bvvA.find(([id]) => id === bbpA);
 	return match ? match[1] : bbp(0, 0);
@@ -29,8 +29,8 @@ export const norm = (
 
 // Normalizes all entries in the BVV, using norm.
 export const normBvv = (
-	bvvA: OLByString<BVV>,
-): OLByString<BVV> => (
+	bvvA: OLByPrim<BVV>,
+): OLByPrim<BVV> => (
 	// normalize all entries
 	ol<BVV>(...bvvA.map(([key, bvvB]): BVV => bvv(key, norm(bvvB))))
 	// remove `[0,0]` entries
@@ -40,8 +40,8 @@ export const normBvv = (
 // Returns the dots in the first clock that are missing from the second
 // clock, but only from entries in the list of ids received as argument.
 export const missingDots = (
-	nc1: OLByString<BVV>,
-	nc2: OLByString<BVV>,
+	nc1: OLByPrim<BVV>,
+	nc2: OLByPrim<BVV>,
 	ids: string[],
 ): [string, number[]][] => (
 	nc1.reduce((acc, bvvX) => {
@@ -103,7 +103,7 @@ const valuesAux = (
 };
 
 // Adds a dot (ID, Counter) to a BVV.
-export const add = (clocks: OLByString<BVV>, [id, counter]: Dot): OLByString<BVV> => {
+export const add = (clocks: OLByPrim<BVV>, [id, counter]: Dot): OLByPrim<BVV> => {
 	const initial = addAux(bbp(0, 0), counter);
 	return clocks.update4(id, bvv(id, initial), (bbp0) => (
 		bvv(id, addAux(bbp0, counter))
@@ -121,14 +121,14 @@ export const addAux = (
 );
 
 // Merges all entries from the two BVVs.
-export const merge = (bvv1: OLByString<BVV>, bvv2: OLByString<BVV>): OLByString<BVV> => (
+export const merge = (bvv1: OLByPrim<BVV>, bvv2: OLByPrim<BVV>): OLByPrim<BVV> => (
 	normBvv(
 		bvv1.merge(bvv2, (a, b) => bvv(a[0], joinAux(a[1], b[1])))
 	)
 );
 
 // Joins entries from BVV2 that are also IDs in BVV1, into BVV1.
-export const join = (bvvList1: OLByString<BVV>, bvvList2: OLByString<BVV>): OLByString<BVV> => {
+export const join = (bvvList1: OLByPrim<BVV>, bvvList2: OLByPrim<BVV>): OLByPrim<BVV> => {
 	// filter keys from bvvList2 that are not in bvvList1
 	const bvvList1Keys = bvvList1.toArray(([id]) => id);
 	// merge bvvList1 with filtered bvvList2b
@@ -150,7 +150,7 @@ export const joinAux = (
 );
 
 // Takes and returns a BVV where in each entry, the bitmap is reset to zero.
-export const base = (someBvv: OLByString<BVV>): OLByString<BVV> => (
+export const base = (someBvv: OLByPrim<BVV>): OLByPrim<BVV> => (
 	// normalize all entries
 	// remove all non-contiguous counters w.r.t the base
 	ol<BVV>(...normBvv(someBvv).map(([id, [counter]]) => bvv(id, bbp(counter, 0))))
@@ -162,9 +162,9 @@ export const base = (someBvv: OLByString<BVV>): OLByString<BVV> => (
 // events generated at Id, i.e., the first component of the pair denotes the
 // last event, and the second component, the bitmap, is always zero.
 export const event = (
-	bvv: OLByString<BVV>,
+	bvv: OLByPrim<BVV>,
 	id: string,
-): [number, OLByString<BVV>] => {
+): [number, OLByPrim<BVV>] => {
 	// find the next counter for id
 	const match = bvv.find(([id0]) => id0 === id);
 	// since nodes call event with their id, their entry always matches [N, 0]
@@ -178,8 +178,8 @@ export const event = (
 export const storeEntry = (
 	id: string,
 	[base]: BBP,
-	bvvA: OLByString<BVV>,
-): OLByString<BVV> => {
+	bvvA: OLByPrim<BVV>,
+): OLByPrim<BVV> => {
 	if (base === 0) return bvvA;
 	const match = bvvA.find(([id0]) => id0 === id);
 	if (match) {
