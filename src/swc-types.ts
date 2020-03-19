@@ -426,6 +426,13 @@ export const km = (...list: KME[]): OLByPrim<KME> => (
 	new OLByPrim<KME>(list)
 );
 
+export type KMM = [OLByPrim<KME>, OLByPrim<KME>] & {
+	tupleType?: "KMM",
+};
+export const kmm = (a: OLByPrim<KME>, b: OLByPrim<KME>): KMM => (
+	setType([a, b], "KMM")
+);
+
 // CC = Causal Context
 // DCC = Dotted Causal Container
 export type DCC = [OLByTuple<DVP>, OLByPrim<Dot>] & {

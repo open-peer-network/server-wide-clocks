@@ -16,10 +16,12 @@ import * as swcNode from './swc-node';
 import * as swcVv from './swc-vv';
 
 
+export const getNew = () => vvm(ol<EVVP>(), ol<EVVP>());
+
 export const addPeer = ([bvvA, bvvB]: VVM, peer: string, itsPeers: string[]): VVM => {
-	const newDots = ol<Dot>(...[peer, ...itsPeers].reduce((acc, id) => (
+	const newDots = [peer, ...itsPeers].reduce((acc, id) => (
 		swcVv.add(acc, d(id, 0))
-	), ol<Dot>()));
+	), ol<Dot>());
 	// const newDots = ol<Dot>(...[peer, ...itsPeers].map((id) => d(id, 0)));
 
 	return vvm(bvvA.store(evvp(peer, newDots)), bvvB);
