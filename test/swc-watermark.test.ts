@@ -1,4 +1,4 @@
-import * as swc from '../swc-watermark';
+import * as swc from "../src/swc-watermark";
 import {
 	d,
 	vv,
@@ -11,9 +11,9 @@ import {
 	BVV,
 	DKM,
 	EVVP,
-} from '../swc-types';
+} from "../src/swc-types";
 
-describe('SWC Watermark', () => {
+describe("SWC Watermark", () => {
 	const C1 = ol<BVV>(
 		bvv("a", bbp(12, 0)),
 		bvv("b", bbp(7, 0)),
@@ -57,7 +57,7 @@ describe('SWC Watermark', () => {
 		),
 	);
 
-	it('update', () => {
+	it("update", () => {
 		expect(M1).toEqual([
 			[
 				["a", [["b", 4]]],
@@ -151,7 +151,7 @@ describe('SWC Watermark', () => {
 		));
 	});
 
-	it('left join', () => {
+	it("left join", () => {
 		const A = vvm(
 			ol<EVVP>(
 				evvp("a", vv(d("b", 4), d("c", 10))),
@@ -220,7 +220,7 @@ describe('SWC Watermark', () => {
 		expect(swc.leftJoin(C, B)).toEqual(C);
 	});
 
-	it('add peer', () => {
+	it("add peer", () => {
 		expect(swc.addPeer(M, "z", ["a", "b"])).toEqual(vvm(
 			ol<EVVP>(
 				evvp("z", vv(d("a", 0), d("b", 0), d("z", 0)))
@@ -261,7 +261,7 @@ describe('SWC Watermark', () => {
 		expect(expected1).toEqual(expected2);
 	});
 
-	it('min', () => {
+	it("min", () => {
 		expect(swc.min(M, "a")).toEqual(0);
 		expect(swc.min(M1, "a")).toEqual(4);
 		expect(swc.min(M1, "b")).toEqual(0);
@@ -270,13 +270,13 @@ describe('SWC Watermark', () => {
 		expect(swc.min(M4, "b")).toEqual(0);
 	});
 
-	it('peers', () => {
+	it("peers", () => {
 		expect(swc.peers(M)).toEqual([]);
 		expect(swc.peers(M1)).toEqual(["a"]);
 		expect(swc.peers(M5)).toEqual(["a", "c"]);
 	});
 
-	it('get', () => {
+	it("get", () => {
 		expect(swc.get(M, "a", "a")).toEqual(0);
 		expect(swc.get(M1, "a", "a")).toEqual(0);
 		expect(swc.get(M1, "b", "a")).toEqual(0);
@@ -284,7 +284,7 @@ describe('SWC Watermark', () => {
 		expect(swc.get(M4, "a", "c")).toEqual(10);
 	});
 
-	it('reset counters', () => {
+	it("reset counters", () => {
 		expect(swc.resetCounters(M)).toEqual(M);
 		expect(swc.resetCounters(M1)).toEqual(vvm(
 			ol<EVVP>(
@@ -314,7 +314,7 @@ describe('SWC Watermark', () => {
 		));
 	});
 
-	it('delete peer', () => {
+	it("delete peer", () => {
 		expect(swc.deletePeer(M1, "a")).toEqual(vvm(
 			ol<EVVP>(),
 			ol<EVVP>(),
@@ -343,7 +343,7 @@ describe('SWC Watermark', () => {
 		));
 	});
 
-	it('replace peer', () => {
+	it("replace peer", () => {
 		const A = swc.addPeer(
 			vvm(
 				ol<EVVP>(),
@@ -405,7 +405,7 @@ describe('SWC Watermark', () => {
 		));
 	});
 
-	it('retire peer', () => {
+	it("retire peer", () => {
 		const A = swc.addPeer(vvm(ol<EVVP>(), ol<EVVP>()), "a", ["b","c"]);
 		const B = swc.addPeer(A, "b", ["a","c"]);
 		const C = swc.addPeer(B, "c", ["a","b"]);
@@ -473,7 +473,7 @@ describe('SWC Watermark', () => {
 		);
 	});
 
-	it('prune retired peers', () => {
+	it("prune retired peers", () => {
 		const D1 = ol<DKM>(
 			dkm("a", [1,2,22]),
 			dkm("b", [4,5,11]),

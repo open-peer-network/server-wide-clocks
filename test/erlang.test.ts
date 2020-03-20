@@ -4,7 +4,7 @@ import {
 	dvp,
 	olt,
 	DVP,
-} from "../swc-types";
+} from "../src/swc-types";
 
 describe("erlang equivalents", () => {
 	it("orddict:merge/3", () => {
@@ -167,7 +167,9 @@ describe("erlang equivalents", () => {
 		expect(a).toEqual(vv(d("a", 1), d("b", 2)));
 	});
 	it("orddict:fold/3", () => {
-		// simply use reduce
+		// use reduce
 	});
-	it("lists:foldl", () => {});
+	it("lists:foldl", () => {
+		// use reduce
+	});
 });

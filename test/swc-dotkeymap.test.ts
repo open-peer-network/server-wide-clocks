@@ -1,5 +1,5 @@
-import * as swcDkm from "../swc-dotkeymap";
-import * as swcWatermark from "../swc-watermark";
+import * as swcDkm from "../src/swc-dotkeymap";
+import * as swcWatermark from "../src/swc-watermark";
 import {
 	d,
     km,
@@ -15,7 +15,7 @@ import {
     DVP,
     DKE,
     KME,
-} from "../swc-types";
+} from "../src/swc-types";
 
 
 describe("SWC Dot/Key Map", () => {

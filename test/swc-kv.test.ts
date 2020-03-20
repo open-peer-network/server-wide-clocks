@@ -11,8 +11,8 @@ import {
     DCC,
     BVV,
     DVP,
-} from '../swc-types';
-import * as swc from '../swc-kv';
+} from "../src/swc-types";
+import * as swc from "../src/swc-kv";
 
 
 const d1 = (): DCC => dcc(

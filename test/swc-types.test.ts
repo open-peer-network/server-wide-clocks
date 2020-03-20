@@ -10,7 +10,7 @@ import {
 	dcc,
 	DVP,
 	EVVP,
-} from "../swc-types";
+} from "../src/swc-types";
 
 describe("types", () => {
 	it("d", () => {
