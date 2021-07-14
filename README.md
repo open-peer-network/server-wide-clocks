@@ -8,3 +8,8 @@ project (erlang). The ultimate goal is to port [Ricardo Tomé Gonçalves'](https
 
 - https://haslab.uminho.pt/tome/files/dotteddb_srds.pdf
 - https://haslab.uminho.pt/tome/files/global_logical_clocks.pdf
+
+```
+yarn install
+yarn test
+```
